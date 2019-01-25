@@ -490,8 +490,7 @@ step(KA11 *cpu)
 	case 060: case 070:	TR(SEC); PSW |= cpu->ir&017; SVC;
 	}
 	case 0300:	TR(SWAB);
-		if(readop(cpu, 011, dst, by)) goto be;
-		CLC;
+		RD_U; CLC;
 		b = WD(DR & 0377, (DR>>8) & 0377);
 		NZ; WR; SVC;
 	}
