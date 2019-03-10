@@ -91,11 +91,6 @@ trace("dati %06o: ", cpu->ba);
 		case 0376: case 0377:
 			cpu->bus->data = cpu->psw;
 			goto ok;
-
-		/* respond but don't return real data */
-		case 0147:
-			cpu->bus->data = 0;
-			goto ok;
 		}
 	}
 
@@ -180,7 +175,7 @@ addrop(KA11 *cpu, int m, int b)
 	m >>= 3;
 	ai = 1 + (!b || (r&6)==6 || m&1);
 	if(m == 0){
-		assert(0);
+//		assert(0);
 		return 0;
 	}
 	switch(m&6){
@@ -279,7 +274,6 @@ step(KA11 *cpu)
 #define TV	cpu->r[012]
 #define BA	cpu->ba
 #define PSW	cpu->psw
-
 #define RD_B	if(sm != 0) if(readop(cpu, 010, src, by)) goto be;\
 		if(dm != 0) if(readop(cpu, 011, dst, by)) goto be;\
 		if(sm == 0) fetchop(cpu, 010, src, by);\
@@ -517,7 +511,7 @@ be:	if(cpu->be > 1){
 		cpu->state = STATE_HALTED;
 		return;
 	}
-printf("bus error\n");
+printf("bus error %o\n", cpu->bus->addr);
 	TRAP(4);
 
 trap:

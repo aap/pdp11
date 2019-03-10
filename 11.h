@@ -27,6 +27,7 @@ typedef uint32_t uint32;
 #define trace(...)
 
 int hasinput(int fd);
+int readn(int fd, void *data, int n);
 int dial(char *host, int port);
 void serve(int port, void (*handlecon)(int, void*), void *arg);
 void nodelay(int fd);

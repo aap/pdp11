@@ -5,7 +5,7 @@ int
 dati_kw11(Bus *bus, void *dev)
 {
 	KW11 *kw = dev;
-	if(bus->addr == 777746){
+	if(bus->addr == 0777546){
 		bus->data = kw->lc_int_enab<<6 |
 			kw->lc_clock<<7;
 		return 0;
@@ -17,7 +17,7 @@ int
 dato_kw11(Bus *bus, void *dev)
 {
 	KW11 *kw = dev;
-	if(bus->addr == 777546){
+	if(bus->addr == 0777546){
 		kw->lc_int_enab = bus->data>>6 & 1;
 		if((bus->data & 0200) == 0){
 			kw->lc_clock = 0;
@@ -32,10 +32,14 @@ dato_kw11(Bus *bus, void *dev)
 int
 datob_kw11(Bus *bus, void *dev)
 {
-	/* ignore odd bytes */
-	if(bus->addr & 1)
-		return 0;
-	return dato_kw11(bus, dev);
+	KW11 *kw = dev;
+	if(bus->addr == 0777546){
+		/* ignore odd bytes */
+		if(bus->addr & 1)
+			return 0;
+		return dato_kw11(bus, dev);
+	}
+	return 1;
 }
 
 #define CLOCKFREQ (1000000000/60)

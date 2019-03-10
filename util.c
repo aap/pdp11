@@ -22,6 +22,22 @@ hasinput(int fd)
 }
 
 int
+readn(int fd, void *data, int n)
+{
+	int m;
+
+	while(n > 0){
+		m = read(fd, data, n);
+		if(m <= 0)
+			return -1;
+		data += m;
+		n -= m;
+	}
+
+	return 0;
+}
+
+int
 dial(char *host, int port)
 {
 	char portstr[32];
