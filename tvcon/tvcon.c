@@ -758,6 +758,8 @@ main(int argc, char *argv[])
 
 	fd = dial(host, port);
 
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+
 	if(SDL_CreateWindowAndRenderer(WIDTH*scale, HEIGHT*scale, 0, &window, &renderer) < 0)
 		panic("SDL_CreateWindowAndRenderer() failed: %s\n", SDL_GetError());
 
