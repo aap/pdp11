@@ -14,6 +14,8 @@ hasinput(int fd)
 	fd_set fds;
 	struct timeval timeout;
 
+	if(fd < 0) return 0;
+
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 	FD_ZERO(&fds);
