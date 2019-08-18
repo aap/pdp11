@@ -298,6 +298,7 @@ main(int argc, char *argv[])
 	int port;
 	int lport;
 	char *host;
+	uint32 sleep;
 
 	memset(&cpu, 0, sizeof(cpu));
 	memset(&bus, 0, sizeof(Bus));
@@ -313,12 +314,16 @@ main(int argc, char *argv[])
 
 	port = 1110;
 	lport = 11100;
+	sleep = 0;
 	ARGBEGIN{
 	case 'p':
 		port = atoi(EARGF(usage()));
 		break;
 	case 'l':
 		lport = atoi(EARGF(usage()));
+		break;
+	case 's':
+		sleep = atoi(EARGF(usage()));
 		break;
 	}ARGEND;
 
@@ -371,6 +376,7 @@ main(int argc, char *argv[])
 
 	/* wait until we get some data from the 10 */
 	cpu.r[7] = 0;
+	cpu.throttle = sleep;
 	memory[0] = 0777;
 	run(&cpu);
 
