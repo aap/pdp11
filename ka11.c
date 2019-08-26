@@ -557,9 +557,24 @@ service:
 		return;
 }
 
+static void sleep_ms (uint32 ms)
+{
+	struct timespec ts;
+
+	if (ms == 0)
+		return;
+
+	ts.tv_sec = ms / 1000;
+	ts.tv_nsec = (ms % 1000) * 1000000;
+	(void)nanosleep (&ts, NULL);
+}
+
 void
 run(KA11 *cpu)
 {
+	int count;
+
+	count = 0;
 	cpu->state = STATE_RUNNING;
 	while(cpu->state != STATE_HALTED){
 		svc(cpu, cpu->bus);
@@ -574,6 +589,11 @@ run(KA11 *cpu)
 		   cpu->state == STATE_WAITING && cpu->traps){
 			cpu->state = STATE_RUNNING;
 			step(cpu);
+		}
+
+		if (count++ == 1000) {
+			sleep_ms(cpu->throttle);
+			count = 0;
 		}
 	}
 
