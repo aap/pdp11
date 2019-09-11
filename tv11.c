@@ -17,6 +17,8 @@
 #define MEMSIZE (12*1024)
 
 uint16 memory[MEMSIZE];
+char *host;
+int port;
 
 void
 busadddev(Bus *bus, Busdev *dev)
@@ -76,6 +78,21 @@ sxt(byte b)
 	return (word)(int8_t)b;
 }
 
+char *re = "";
+
+void
+reconnect(Ten11 *ten11)
+{
+	ten11->fd = dial(host, port);
+	while (ten11->fd == -1) {
+		sleep(5);
+		ten11->fd = dial(host, port);
+	}
+	nodelay(ten11->fd);
+	printf("%sconnected to PDP-10\n", re);
+	re = "re";
+}
+
 int
 svc_ten11(Bus *bus, void *dev)
 {
@@ -86,15 +103,17 @@ svc_ten11(Bus *bus, void *dev)
 	word d;
 
 	if(ten11->fd < 0)
-		return 0;
+		reconnect(ten11);
 
 	memset(buf, 0, sizeof(buf));
 	if(!hasinput(ten11->fd))
 		return 0;
 	n = read(ten11->fd, len, 2);
 	if(n != 2){
-		fprintf(stderr, "fd closed, exiting\n");
-		exit(0);
+		printf("fd closed, reconnecting...\n");
+		close(ten11->fd);
+		ten11->fd = -1;
+		return 0;
 	}
 	if(len[0] != 0){
 		fprintf(stderr, "unibus botch, exiting\n");
@@ -295,9 +314,7 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int port;
 	int lport;
-	char *host;
 	uint32 sleep;
 
 	memset(&cpu, 0, sizeof(cpu));
@@ -331,20 +348,7 @@ main(int argc, char *argv[])
 		usage();
 
 	host = argv[0];
-
-	printf("connecting to PDP-10\n");
-//	ten11.fd = -1;
 	ten11.cycle = 0;
-	ten11.fd = dial(host, port);
-	if(ten11.fd < 0){
-		printf("can't connect to PDP-10\n");
-//		return 1;
-	}else{
-		nodelay(ten11.fd);
-		setunibus(0);
-		printf("connected to PDP-10\n");
-	}
-
 	loadmem("mem.txt");
 
 //	if(loadpt("maindec/MAINDEC-11-D0NA-PB.ptap"))
