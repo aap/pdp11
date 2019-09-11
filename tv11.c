@@ -12,6 +12,7 @@
 #endif
 #include "tv.h"
 #include "args.h"
+#include <stdarg.h>
 
 // in words
 #define MEMSIZE (12*1024)
@@ -19,6 +20,8 @@
 uint16 memory[MEMSIZE];
 char *host;
 int port;
+void (*debug) (char *, ...);
+FILE *logfile;
 
 void
 busadddev(Bus *bus, Busdev *dev)
@@ -78,6 +81,24 @@ sxt(byte b)
 	return (word)(int8_t)b;
 }
 
+void
+quiet (char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	va_end(ap);
+}
+
+void
+log (char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	vfprintf(logfile, format, ap);
+	fflush(logfile);
+	va_end(ap);
+}
+
 char *re = "";
 
 void
@@ -135,7 +156,7 @@ svc_ten11(Bus *bus, void *dev)
 		bus->data = d;
 		if(a&1) goto be;
 		if(dato_bus(bus)) goto be;
-//fprintf(stderr, "TEN11 write: %06o %06o\n", bus->addr, bus->data);
+		debug("TEN11 write: %06o %06o\n", bus->addr, bus->data);
 		buf[0] = 0;
 		buf[1] = 1;
 		buf[2] = 3;
@@ -145,7 +166,7 @@ svc_ten11(Bus *bus, void *dev)
 		bus->addr = a;
 		if(a&1) goto be;
 		if(dati_bus(bus)) goto be;
-//fprintf(stderr, "TEN11 read: %06o %06o\n", bus->addr, bus->data);
+		debug("TEN11 read: %06o %06o\n", bus->addr, bus->data);
 		buf[0] = 0;
 		buf[1] = 3;
 		buf[2] = 3;
@@ -332,6 +353,7 @@ main(int argc, char *argv[])
 	port = 1110;
 	lport = 11100;
 	sleep = 0;
+	debug = quiet;
 	ARGBEGIN{
 	case 'p':
 		port = atoi(EARGF(usage()));
@@ -341,6 +363,10 @@ main(int argc, char *argv[])
 		break;
 	case 's':
 		sleep = atoi(EARGF(usage()));
+		break;
+	case 'd':
+		logfile = stderr;
+		debug = log;
 		break;
 	}ARGEND;
 
