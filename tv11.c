@@ -12,11 +12,16 @@
 #endif
 #include "tv.h"
 #include "args.h"
+#include <stdarg.h>
 
 // in words
 #define MEMSIZE (12*1024)
 
 uint16 memory[MEMSIZE];
+char *host;
+int port;
+void (*debug) (char *, ...);
+FILE *logfile;
 
 void
 busadddev(Bus *bus, Busdev *dev)
@@ -76,6 +81,39 @@ sxt(byte b)
 	return (word)(int8_t)b;
 }
 
+void
+quiet (char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	va_end(ap);
+}
+
+void
+log (char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	vfprintf(logfile, format, ap);
+	fflush(logfile);
+	va_end(ap);
+}
+
+char *re = "";
+
+void
+reconnect(Ten11 *ten11)
+{
+	ten11->fd = dial(host, port);
+	while (ten11->fd == -1) {
+		sleep(5);
+		ten11->fd = dial(host, port);
+	}
+	nodelay(ten11->fd);
+	printf("%sconnected to PDP-10\n", re);
+	re = "re";
+}
+
 int
 svc_ten11(Bus *bus, void *dev)
 {
@@ -86,15 +124,17 @@ svc_ten11(Bus *bus, void *dev)
 	word d;
 
 	if(ten11->fd < 0)
-		return 0;
+		reconnect(ten11);
 
 	memset(buf, 0, sizeof(buf));
 	if(!hasinput(ten11->fd))
 		return 0;
 	n = read(ten11->fd, len, 2);
 	if(n != 2){
-		fprintf(stderr, "fd closed, exiting\n");
-		exit(0);
+		printf("fd closed, reconnecting...\n");
+		close(ten11->fd);
+		ten11->fd = -1;
+		return 0;
 	}
 	if(len[0] != 0){
 		fprintf(stderr, "unibus botch, exiting\n");
@@ -116,7 +156,7 @@ svc_ten11(Bus *bus, void *dev)
 		bus->data = d;
 		if(a&1) goto be;
 		if(dato_bus(bus)) goto be;
-//fprintf(stderr, "TEN11 write: %06o %06o\n", bus->addr, bus->data);
+		debug("TEN11 write: %06o %06o\n", bus->addr, bus->data);
 		buf[0] = 0;
 		buf[1] = 1;
 		buf[2] = 3;
@@ -126,7 +166,7 @@ svc_ten11(Bus *bus, void *dev)
 		bus->addr = a;
 		if(a&1) goto be;
 		if(dati_bus(bus)) goto be;
-//fprintf(stderr, "TEN11 read: %06o %06o\n", bus->addr, bus->data);
+		debug("TEN11 read: %06o %06o\n", bus->addr, bus->data);
 		buf[0] = 0;
 		buf[1] = 3;
 		buf[2] = 3;
@@ -295,9 +335,7 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int port;
 	int lport;
-	char *host;
 	uint32 sleep;
 
 	memset(&cpu, 0, sizeof(cpu));
@@ -315,6 +353,7 @@ main(int argc, char *argv[])
 	port = 1110;
 	lport = 11100;
 	sleep = 0;
+	debug = quiet;
 	ARGBEGIN{
 	case 'p':
 		port = atoi(EARGF(usage()));
@@ -325,26 +364,17 @@ main(int argc, char *argv[])
 	case 's':
 		sleep = atoi(EARGF(usage()));
 		break;
+	case 'd':
+		logfile = stderr;
+		debug = log;
+		break;
 	}ARGEND;
 
 	if(argc < 1)
 		usage();
 
 	host = argv[0];
-
-	printf("connecting to PDP-10\n");
-//	ten11.fd = -1;
 	ten11.cycle = 0;
-	ten11.fd = dial(host, port);
-	if(ten11.fd < 0){
-		printf("can't connect to PDP-10\n");
-//		return 1;
-	}else{
-		nodelay(ten11.fd);
-		setunibus(0);
-		printf("connected to PDP-10\n");
-	}
-
 	loadmem("mem.txt");
 
 //	if(loadpt("maindec/MAINDEC-11-D0NA-PB.ptap"))
