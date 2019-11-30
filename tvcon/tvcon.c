@@ -162,6 +162,8 @@ updatefb(void)
 	}
 }
 
+SDL_Rect texrect;
+
 void
 draw(void)
 {
@@ -176,7 +178,7 @@ draw(void)
 		updatescreen = 0;
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, screentex, nil, nil);
+		SDL_RenderCopy(renderer, screentex, nil, &texrect);
 		SDL_RenderPresent(renderer);
 	}
 }
@@ -241,7 +243,7 @@ initkeymap(void)
 	scancodemap[SDL_SCANCODE_BACKSPACE] = backspace;
 	scancodemap[SDL_SCANCODE_F1] = 0020;	/* CALL */
 
-	scancodemap[SDL_SCANCODE_F3] = 0021;	/* CLEAR */
+	scancodemap[SDL_SCANCODE_F4] = 0021;	/* CLEAR */
 	scancodemap[SDL_SCANCODE_TAB] = 022;
 	scancodemap[SDL_SCANCODE_ESCAPE] = 023;	/* ALT MODE */
 	scancodemap[SDL_SCANCODE_Q] = 024;
@@ -765,6 +767,10 @@ main(int argc, char *argv[])
 
 	screentex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
 			SDL_TEXTUREACCESS_STREAMING, WIDTH*scale, HEIGHT*scale);
+	texrect.x = 0;
+	texrect.y = 0;
+	texrect.w = WIDTH*scale;
+	texrect.h = HEIGHT*scale;
 
 	keystate = SDL_GetKeyboardState(nil);
 
@@ -817,6 +823,10 @@ main(int argc, char *argv[])
 			case SDL_WINDOWEVENT_TAKE_FOCUS:
 #endif
 				break;
+			case SDL_WINDOWEVENT_RESIZED:
+				texrect.x = (event.window.data1-WIDTH*scale)/2;
+				texrect.y = (event.window.data2-HEIGHT*scale)/2;
+				// fall through
 			default:
 				/* redraw */
 				updatescreen = 1;

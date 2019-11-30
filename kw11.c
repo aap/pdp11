@@ -32,7 +32,6 @@ dato_kw11(Bus *bus, void *dev)
 int
 datob_kw11(Bus *bus, void *dev)
 {
-	KW11 *kw = dev;
 	if(bus->addr == 0777546){
 		/* ignore odd bytes */
 		if(bus->addr & 1)

@@ -20,7 +20,7 @@ typedef uint32_t uint32;
 #define B15 0100000
 #define nil NULL
 
-#define SETMASK(l, r, m) l = ((l)&~(m) | (r)&(m))
+#define SETMASK(l, r, m) l = (((l)&~(m)) | ((r)&(m)))
 
 
 //#define trace printf

@@ -305,8 +305,9 @@ step(KA11 *cpu)
 
 	oldpsw = PSW;
 
-	INA(PC, cpu->ir);
-	PC += 2;	/* don't increment on bus error! */
+	cpu->ba = PC;
+	PC += 2;	/* increment even on bus error */
+	IN(cpu->ir);
 
 	by = !!(cpu->ir&B15);
 	br = sxt(cpu->ir)<<1;
@@ -492,7 +493,7 @@ step(KA11 *cpu)
 	/* Operate */
 	switch(cpu->ir & 7){
 	case 0:	TR(HALT); cpu->state = STATE_HALTED; return;
-	case 1:	TR(WAIT); cpu->state = STATE_WAITING; return;
+	case 1:	TR(WAIT); cpu->state = STATE_WAITING; SVC;
 	case 2:	TR(RTI);
 		BA = SP; POP; IN(PC);
 		BA = SP; POP; IN(PSW);

@@ -1,6 +1,7 @@
-CFLAGS=-fno-diagnostics-color -fno-diagnostics-show-caret -O3
+CFLAGS=-Wall -Wno-parentheses -fno-diagnostics-color -fno-diagnostics-show-caret -O3
+CFLAGS+=-DAUTODIAG
 
-all: tv11 pdp1145 pdp1105 pdp1120
+all: tv11 pdp1145 pdp1105 pdp1120 pdp1140
 
 tv11: tv11.o tv.o ka11.o kw11.o kl11.o eae.o mem.o util.o
 	$(CC) $(CFLAGS) -o $@ $^ -lpthread
@@ -10,17 +11,25 @@ pdp1145: u_kb11a.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 pdp1105: 1105.o kd11b.o eae.o mem.o util.o
-	$(CC) $(CFLAGS) -DAUTODIAG  -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 1105.o: 11.h kd11b.h
 
 pdp1120: 1120.o ka11.o kw11.o kl11.o eae.o mem.o util.o
-	$(CC) $(CFLAGS) -DAUTODIAG  -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 1120.o: 11.h ka11.h kw11.h kl11.h
 
+pdp1140: 1140.o kd11a.o kw11.o kl11.o eae.o mem.o util.o
+	$(CC) $(CFLAGS) -o $@ $^
+1140.o: 11.h kd11a.h kw11.h kl11.h
+
 ka11.o: 11.h ka11.h
+kd11a.o: 11.h kd11a.h
 kd11b.o: 11.h kd11b.h
 kw11.o: 11.h kw11.h
 kl11.o: 11.h kl11.h
 eae.o: 11.h
 mem.o: 11.h
 util.o: 11.h
+
+clean:
+	rm *.o

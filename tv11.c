@@ -2,6 +2,10 @@
 
 /* define this for a TV-11 with 11/05. Make sure to link correctly! */
 //#define KD11Bp
+#ifdef AUTODIAG
+// just so linking works, we don't actually do AUTODIAG in the tv11
+int diagpassed;
+#endif
 
 #ifdef KD11Bp
 #include "kd11b.h"
@@ -162,7 +166,7 @@ loadmem(char *filename)
 	f = fopen(filename, "r");
 	if(f == nil)
 		return;
-	while(s = fgets(line, 100, f)){
+	while(s = fgets(line, 100, f), s != nil){
 		while(isspace(*s)) s++;
 		if(*s == ':')
 			w = strtol(s+1, nil, 8)>>1;
