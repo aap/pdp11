@@ -11,6 +11,7 @@ struct KA11
 	int traps;
 	int be;
 	int state;
+	uint32 throttle;
 
 	struct {
 		int (*bg)(void *dev);
