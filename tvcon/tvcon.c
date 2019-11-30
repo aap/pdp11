@@ -163,6 +163,23 @@ updatefb(void)
 }
 
 SDL_Rect texrect;
+uint32 screenmodes[2] = { 0, SDL_WINDOW_FULLSCREEN_DESKTOP };
+int fullscreen;
+
+void
+resize(void)
+{
+	int w, h;
+	SDL_GetWindowSize(window, &w, &h);
+//	printf("resize %d %d\n", w, h);
+	texrect.x = (w-1024)/2;
+	texrect.y = (h-1024)/2;
+
+	SDL_Event ev;
+	SDL_memset(&ev, 0, sizeof(SDL_Event));
+	ev.type = userevent;
+	SDL_PushEvent(&ev);
+}
 
 void
 draw(void)
@@ -488,6 +505,12 @@ keydown(SDL_Keysym keysym, Uint8 repeat)
 
 	if(ctrlslock && keysym.scancode == SDL_SCANCODE_CAPSLOCK)
 		keysym.scancode = SDL_SCANCODE_LCTRL;
+
+	if(keysym.scancode == SDL_SCANCODE_F8){
+		fullscreen = !fullscreen;
+		SDL_SetWindowFullscreen(window, screenmodes[fullscreen]);
+		resize();
+	}
 
 	if(modmap){
 		/* Map RALT to TOP and ignore windows key */
