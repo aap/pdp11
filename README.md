@@ -5,6 +5,7 @@ Contents
 * a PDP-11/05 cpu (KD11B) implemented from the microcode listing, but not emulating the actual microcode. Passing ZKAAA-ZKAMA.
 This is based on the code I wrote for the [Knight TV emulation](https://github.com/aap/tv11)
 * a PDP-11/20 cpu (KA11) as a modified KD11B. Not implemented from the schematics (yet?). Passing ZKAAA-ZKAMA.
+* a PDP-11/40 cpu (KD11A) implemented from the microcode and schematics, but not emulating the actual microcode. With KJ11 and KT11.
 * the beginnings of a PDP-11/45 (KB11A) cpu. Implemented from the schematics and running the microcode. This machine is a beast so it doesn't do a whole lot at all yet.
 * KL11 console
 * KW11 line clock
@@ -37,6 +38,6 @@ I have to say I like it but apologize if you don't.
 To-do
 =====
 
-* implement DATIP for the Unibone
+* implement DATIP correctly (currently done for KD11A and B)
 * introduce #ifdef UNIBONE so we can maintain the code in one repo
 
