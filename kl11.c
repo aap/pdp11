@@ -95,7 +95,8 @@ svc_kl11(Bus *bus, void *dev)
 	KL11 *kl = dev;
 
 	NNN++;
-	if(NNN == 20){
+//	if(NNN == 20){
+	if(NNN == 20000){
 	/* transmit */
 	if(!kl->xmit_tbmt){
 		uint8 c = kl->xmit_b & 0177;
@@ -132,13 +133,11 @@ bg_kl11(void *dev)
 	KL11 *kl = dev;
 	if(kl->rcd_int && kl->rcd_int_enab){
 		kl->rcd_int = 0;
-printf("rx trap\n");
 		return 060;
 	}
 
 	if(kl->xmit_int && kl->xmit_int_enab){
 		kl->xmit_int = 0;
-printf("tx trap\n");
 		return 064;
 	}
 	assert(0);	// can't happen

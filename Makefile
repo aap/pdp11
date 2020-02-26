@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wno-parentheses -fno-diagnostics-color -fno-diagnostics-show-caret -O3
-CFLAGS+=-DAUTODIAG
+CFLAGS+=-DAUTODIAG #-pg
 
 all: tv11 pdp1145 pdp1105 pdp1120 pdp1140
 

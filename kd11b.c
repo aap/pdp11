@@ -131,9 +131,13 @@ reset(KD11B *cpu)
 }
 
 int
-dati(KD11B *cpu, int b)
+dati(KD11B *cpu, int b, int pse)
 {
 trace("dati %06o: ", cpu->ba);
+	if(cpu->bus->pause)
+		printf("XXXX: DATIP not ended properly\n");
+	cpu->bus->pause = pse;
+
 	/* allow odd addresses for bytes and registers */
 	int alodd = b || cpu->ba >= 0177700 && cpu->ba < 0177720;
 
@@ -201,6 +205,7 @@ ok:
 	return 0;
 be:
 	trace("BE\n");
+	cpu->bus->pause = 0;
 	cpu->be++;
 	return 1;
 }
@@ -209,6 +214,8 @@ int
 dato(KD11B *cpu, int b)
 {
 trace("dato %06o %06o %d\n", cpu->ba, cpu->bus->data, b);
+	cpu->bus->pause = 0;
+
 	/* allow odd addresses for bytes and registers */
 	int alodd = b || cpu->ba >= 0177700 && cpu->ba < 0177720;
 
@@ -338,12 +345,12 @@ addrop(KD11B *cpu, int m, int b)
 	case 6:		// INDEX
 		cpu->ba = cpu->r[7];
 		cpu->r[7] += 2;
-		if(dati(cpu, 0)) return 1;
+		if(dati(cpu, 0, 0)) return 1;
 		cpu->b = cpu->ba = cpu->bus->data + cpu->r[r];
 		break;
 	}
 	if(m&1){
-		if(dati(cpu, 0)) return 1;
+		if(dati(cpu, 0, 0)) return 1;
 		cpu->b = cpu->ba = cpu->bus->data;
 	}
 	return 0;
@@ -351,14 +358,14 @@ addrop(KD11B *cpu, int m, int b)
 }
 
 static int
-fetchop(KD11B *cpu, int t, int m, int b)
+fetchop(KD11B *cpu, int t, int m, int b, int pse)
 {
 	int r;
 	r = m&7;
 	if((m&070) == 0)
 		cpu->r[t] = cpu->r[r];
 	else{
-		if(dati(cpu, b)) return 1;
+		if(dati(cpu, b, pse)) return 1;
 		cpu->r[t] = cpu->bus->data;
 		if(b && cpu->ba&1) cpu->r[t] = cpu->r[t]>>8;
 	}
@@ -367,9 +374,9 @@ fetchop(KD11B *cpu, int t, int m, int b)
 }
 
 static int
-readop(KD11B *cpu, int t, int m, int b)
+readop(KD11B *cpu, int t, int m, int b, int pse)
 {
-	return !(addrop(cpu, m, b) == 0 && fetchop(cpu, t, m, b) == 0);
+	return !(addrop(cpu, m, b) == 0 && fetchop(cpu, t, m, b, pse) == 0);
 }
 
 static int
@@ -411,15 +418,17 @@ step(KD11B *cpu)
 //	trace("fetch from %06o\n", cpu->r[7]);
 //	printstate(cpu);
 
+#define SR_N	010
+#define DR_N	011
 #define SP	cpu->r[6]
 #define PC	cpu->r[7]
-#define SR	cpu->r[010]
-#define DR	cpu->r[011]
+#define SR	cpu->r[SR_N]
+#define DR	cpu->r[DR_N]
 #define TV	cpu->r[012]
 #define BA	cpu->ba
 #define PSW	cpu->psw
-#define RD_B	if(readop(cpu, 010, src, by)) goto be; if(readop(cpu, 011, dst, by)) goto be
-#define RD_U	if(readop(cpu, 011, dst, by)) goto be; SR = DR
+#define RD_B(p)	if(readop(cpu, SR_N, src, by, 0)) goto be; if(readop(cpu, DR_N, dst, by, p)) goto be
+#define RD_U(p)	if(readop(cpu, DR_N, dst, by, p)) goto be; SR = DR
 #define WR	if(writedest(cpu, b, by)) goto be
 #define NZ	setnz(cpu, b)
 #define SVC	goto service
@@ -436,8 +445,8 @@ step(KD11B *cpu)
 #define PUSH	SP -= 2; if(!inhov && (SP&~0377) == 0) cpu->traps |= TRAP_STACK
 #define POP	SP += 2
 #define OUT(a,d)	cpu->ba = (a); cpu->bus->data = (d); if(dato(cpu, 0)) goto be
-#define IN(d)	if(dati(cpu, 0)) goto be; d = cpu->bus->data
-#define INA(a,d)	cpu->ba = a; if(dati(cpu, 0)) goto be; d = cpu->bus->data
+#define IN(d)	if(dati(cpu, 0, 0)) goto be; d = cpu->bus->data
+#define INA(a,d)	cpu->ba = a; if(dati(cpu, 0, 0)) goto be; d = cpu->bus->data
 #define TR(m)	trace("%06o "#m"\n", PC-2)
 #define TRB(m)	trace("%06o "#m"%s\n", PC-2, by ? "B" : "")
 
@@ -461,38 +470,38 @@ step(KD11B *cpu)
 	/* Binary */
 	switch(cpu->ir & 0170000){
 	case 0110000: case 0010000:	TRB(MOV);
-		if(readop(cpu, 010, src, by)) goto be;
+		if(readop(cpu, SR_N, src, by, 0)) goto be;
 		if(addrop(cpu, dst, by)) goto be;
-		if(dm && fetchop(cpu, 011, dst, by)) goto be;
+		if(dm && fetchop(cpu, DR_N, dst, by, 1)) goto be;
 		CLV;
 		b = SR; NZ;
 		if(dm==0) cpu->r[df] = SR;
 		else writedest(cpu, SR, by);
 		SVC;
 	case 0120000: case 0020000:	TRB(CMP);
-		RD_B; CLCV;
+		RD_B(0); CLCV;
 		b = SR + W(~DR) + 1; NC; BXT;
 		if(sgn((SR ^ DR) & ~(DR ^ b))) SEV;
 		NZ; SVC;
 	case 0130000: case 0030000:	TRB(BIT);
-		RD_B; CLV;
+		RD_B(0); CLV;
 		b = DR & SR;
 		NZ; SVC;
 	case 0140000: case 0040000:	TRB(BIC);
-		RD_B; CLV;
+		RD_B(1); CLV;
 		b = DR & ~SR;
 		NZ; WR; SVC;
 	case 0150000: case 0050000:	TRB(BIS);
-		RD_B; CLV;
+		RD_B(1); CLV;
 		b = DR | SR;
 		NZ; WR; SVC;
 	case 0060000:			TR(ADD);
-		by = 0; RD_B; CLCV;
+		by = 0; RD_B(1); CLCV;
 		b = SR + DR; C;
 		if(sgn(~(SR ^ DR) & (DR ^ b))) SEV;
 		NZ; WR; SVC;
 	case 0160000:			TR(SUB);
-		by = 0; RD_B; CLCV;
+		by = 0; RD_B(1); CLCV;
 		b = DR + W(~SR) + 1; NC;
 		if(sgn((SR ^ DR) & (DR ^ b))) SEV;
 		NZ; WR; SVC;
@@ -504,60 +513,60 @@ step(KD11B *cpu)
 	/* Unary */
 	switch(cpu->ir & 0007700){
 	case 0005000:	TRB(CLR);
-		RD_U; CLCV;
+		RD_U(1); CLCV;
 		b = 0;
 		NZ; WR; SVC;
 	case 0005100:	TRB(COM);
-		RD_U; CLV; SEC;
+		RD_U(1); CLV; SEC;
 		b = W(~SR);
 		NZ; WR; SVC;
 	case 0005200:	TRB(INC);
-		RD_U; CLV;
+		RD_U(1); CLV;
 		b = W(SR+1); BXT;
 		if(sgn(~SR&b)) SEV;
 		NZ; WR; SVC;
 	case 0005300:	TRB(DEC);
-		RD_U; CLV;
+		RD_U(1); CLV;
 		b = W(SR+~0); BXT;
 		if(sgn(SR&~b)) SEV;
 		NZ; WR; SVC;
 	case 0005400:	TRB(NEG);
-		RD_U; CLCV;
+		RD_U(1); CLCV;
 		b = W(~SR+1); BXT; if(b) SEC;
 		if(sgn(b&SR)) SEV;
 		NZ; WR; SVC;
 	case 0005500:	TRB(ADC);
-		RD_U; c = ISSET(PSW_C); CLCV;
+		RD_U(1); c = ISSET(PSW_C); CLCV;
 		b = SR + c; C; BXT;
 		if(sgn(~SR&b)) SEV;
 		NZ; WR; SVC;
 	case 0005600:	TRB(SBC);
-		RD_U; c = !ISSET(PSW_C)-1; CLCV;
+		RD_U(1); c = !ISSET(PSW_C)-1; CLCV;
 		b = W(SR+c); if(c && SR == 0) SEC; BXT;
 		if(sgn(SR&~b)) SEV;
 		NZ; WR; SVC;
 	case 0005700:	TRB(TST);
-		RD_U; CLCV;
+		RD_U(0); CLCV;
 		b = SR;
 		NZ; SVC;
 
 	case 0006000:	TRB(ROR);
-		RD_U; c = ISSET(PSW_C); CLCV;
+		RD_U(1); c = ISSET(PSW_C); CLCV;
 		b = (SR&mask) >> 1; if(c) b |= sign; if(SR & 1) SEC; BXT;
 		if((PSW>>3^PSW)&1) SEV;
 		NZ; WR; SVC;
 	case 0006100:	TRB(ROL);
-		RD_U; c = ISSET(PSW_C); CLCV;
+		RD_U(1); c = ISSET(PSW_C); CLCV;
 		b = (SR<<1) & mask; if(c) b |= 1; if(SR & B15) SEC; BXT;
 		if((PSW>>3^PSW)&1) SEV;
 		NZ; WR; SVC;
 	case 0006200:	TRB(ASR);
-		RD_U; c = ISSET(PSW_C); CLCV;
+		RD_U(1); c = ISSET(PSW_C); CLCV;
 		b = W(SR>>1) | SR&B15; if(SR & 1) SEC; BXT;
 		if((PSW>>3^PSW)&1) SEV;
 		NZ; WR; SVC;
 	case 0006300:	TRB(ASL);
-		RD_U; CLCV;
+		RD_U(1); CLCV;
 		b = W(SR<<1); if(SR & B15) SEC; BXT;
 		if((PSW>>3^PSW)&1) SEV;
 		NZ; WR; SVC;
@@ -571,20 +580,7 @@ step(KD11B *cpu)
 	}
 
 	switch(cpu->ir & 0107400){
-	case 0004000:
-	case 0004400:	TR(JSR);
-		if(dm == 0) goto ill;
-		if(addrop(cpu, dst, 0)) goto be;
-		DR = cpu->b;
-		PUSH; OUT(SP, cpu->r[sf]);
-		cpu->r[sf] = PC; PC = DR;
-		SVC;
-	case 0104000:	TR(EMT); TRAP(030);
-	case 0104400:	TR(TRAP); TRAP(034);
-	}
-
 	/* Branches */
-	switch(cpu->ir & 0103400){
 	case 0000400:	TR(BR); BR; SVC;
 	case 0001000:	TR(BNE); CBR(0x0F0F); SVC;
 	case 0001400:	TR(BEQ); CBR(0xF0F0); SVC;
@@ -600,6 +596,23 @@ step(KD11B *cpu)
 	case 0102400:	TR(BVS); CBR(0xCCCC); SVC;
 	case 0103000:	TR(BCC); CBR(0x5555); SVC;
 	case 0103400:	TR(BCS); CBR(0xAAAA); SVC;
+
+	case 0004000:
+	case 0004400:	TR(JSR);
+		if(dm == 0) goto ill;
+		if(addrop(cpu, dst, 0)) goto be;
+		if(dati(cpu, 0, 0)) goto be;
+		DR = cpu->b;
+		PUSH; OUT(SP, cpu->r[sf]);
+		cpu->r[sf] = PC; PC = DR;
+		SVC;
+	case 0104000:	TR(EMT); TRAP(030);
+	case 0104400:	TR(TRAP); TRAP(034);
+	case 0007000:
+	case 0007400:
+	case 0107000:
+	case 0107400:
+		goto ri;
 	}
 
 	// Hope we caught all instructions we meant to
@@ -610,6 +623,7 @@ step(KD11B *cpu)
 	case 0100:	TR(JMP);
 		if(dm == 0) goto ill;
 		if(addrop(cpu, dst, 0)) goto be;
+		if(dati(cpu, 0, 0)) goto be;
 		PC = cpu->b;
 		SVC;
 	case 0200:
@@ -625,7 +639,7 @@ step(KD11B *cpu)
 	case 060: case 070:	TR(SEC); PSW |= cpu->ir&017; SVC;
 	}
 	case 0300:	TR(SWAB);
-		if(readop(cpu, 011, dst, by)) goto be;
+		if(readop(cpu, DR_N, dst, by, 1)) goto be;
 		CLCV;
 		b = WD(DR & 0377, (DR>>8) & 0377);
 		NZ; WR; SVC;
@@ -742,7 +756,8 @@ run(KD11B *cpu)
 
 		// Don't handle IO all the time
 		n++;
-		if(n != 20)
+//		if(n != 20)
+		if(n != 20000)
 			continue;
 		n = 0;
 

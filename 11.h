@@ -18,6 +18,7 @@ typedef uint32_t uint32;
 #define M16 0177777
 #define B7  0000200
 #define B15 0100000
+#define B31 020000000000
 #define nil NULL
 
 #define SETMASK(l, r, m) l = (((l)&~(m)) | ((r)&(m)))
@@ -56,8 +57,10 @@ struct Bus
 	Busdev *devs;
 	uint32 addr;
 	word data;
+	int pause;
 };
 int dati_bus(Bus *bus);
+int datip_bus(Bus *bus);
 int dato_bus(Bus *bus);
 int datob_bus(Bus *bus);
 
