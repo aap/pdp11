@@ -37,7 +37,7 @@ int modmap = 0;
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Texture *screentex;
-uint8 *keystate;
+const uint8 *keystate;
 uint32 fb[WIDTH*HEIGHT];
 uint32 *finalfb;
 uint32 fg = 0x4AFF0000; // Phosphor P39, peak at 525nm.
