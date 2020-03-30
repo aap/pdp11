@@ -787,6 +787,7 @@ main(int argc, char *argv[])
 
 	if(SDL_CreateWindowAndRenderer(WIDTH*scale, HEIGHT*scale, 0, &window, &renderer) < 0)
 		panic("SDL_CreateWindowAndRenderer() failed: %s\n", SDL_GetError());
+	SDL_SetWindowTitle(window, "Knight TV");
 
 	screentex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
 			SDL_TEXTUREACCESS_STREAMING, WIDTH*scale, HEIGHT*scale);
