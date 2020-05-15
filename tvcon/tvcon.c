@@ -182,6 +182,24 @@ resize(void)
 }
 
 void
+stretch(SDL_Rect *r)
+{
+	int w, h;
+	SDL_GetRendererOutputSize(renderer, &w, &h);
+	if ((double)h / texrect.h < (double)w / texrect.w){
+		r->w = texrect.w * h / texrect.h;
+		r->h = h;
+		r->x = (w - r->w) / 2;
+		r->y = 0;
+	}else{
+		r->w = w;
+		r->h = texrect.h * w / texrect.w;
+		r->x = 0;
+		r->y = (h - r->h) / 2;
+	}
+}
+
+void
 draw(void)
 {
 	if(updatebuf){
@@ -192,10 +210,12 @@ draw(void)
 		updatescreen = 1;
 	}
 	if(updatescreen){
+		SDL_Rect screenrect;
+		stretch(&screenrect);
 		updatescreen = 0;
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, screentex, nil, &texrect);
+		SDL_RenderCopy(renderer, screentex, nil, &screenrect);
 		SDL_RenderPresent(renderer);
 	}
 }
