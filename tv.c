@@ -455,7 +455,7 @@ sendfb(TV *tv, int osw)
 	w2b(b+6, HEIGHT);
 	b += 8;
 	packfb(tv, b, con->dpy, 0, 0, WIDTH/16, HEIGHT);
-	write(con->fd, largebuf, 3+8+WIDTH*HEIGHT/8);
+	writen(con->fd, largebuf, 3+8+WIDTH*HEIGHT/8);
 }
 
 void
@@ -499,7 +499,7 @@ sendupdate(TV *tv, FBuffer *buffer, uint16 addr)
 		bw1 = n1 < 0 ? 0 : tv->buffers[n1].mask;
 		bw2 = n2 < 0 ? 0 : tv->buffers[n2].mask;
 		w2b(buf+5, w1^bw1 | w2^bw2);
-		write(tv->cons[tv->omap[osw]].fd, buf, 7);
+		writen(tv->cons[tv->omap[osw]].fd, buf, 7);
 	}
 }
 
@@ -682,7 +682,7 @@ err:
 		w2b(b+6, h);
 		b += 8;
 		packfb(tv, b, con->dpy, x, y, w, h);
-		write(con->fd, largebuf, 3+8+w*h*2);
+		writen(con->fd, largebuf, 3+8+w*h*2);
 		break;
 
 	default:
