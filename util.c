@@ -40,6 +40,22 @@ readn(int fd, void *data, int n)
 }
 
 int
+writen(int fd, void *data, int n)
+{
+	int m;
+
+	while(n > 0){
+		m = write(fd, data, n);
+		if(m <= 0)
+			return -1;
+		data += m;
+		n -= m;
+	}
+
+	return 0;
+}
+
+int
 dial(char *host, int port)
 {
 	char portstr[32];
@@ -112,4 +128,17 @@ nodelay(int fd)
 {
 	int flag = 1;
 	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
+}
+
+void
+sleep_ms (uint32 ms)
+{
+	struct timespec ts;
+
+	if (ms == 0)
+		return;
+
+	ts.tv_sec = ms / 1000;
+	ts.tv_nsec = (ms % 1000) * 1000000;
+	(void)nanosleep (&ts, NULL);
 }
