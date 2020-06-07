@@ -712,9 +712,10 @@ handletv_thread(void *arg)
 			conmap[nfds] = i;
 			nfds++;
 		}
-		if(nfds == 0)
-			/* TODO: sleep until there's fds */
+		if(nfds == 0){
+			sleep_ms (200);
 			continue;
+		}
 
 		/* We need a timeout here so poll can see
 		 * when we open a new connection */
