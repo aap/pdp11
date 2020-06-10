@@ -759,6 +759,10 @@ main(int argc, char *argv[])
 	int port;
 	char *host;
 
+	argc=1;
+	argv[0]="tvcon";
+	argv[1]="maya.papnet.eu";
+
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_StopTextInput();
 
