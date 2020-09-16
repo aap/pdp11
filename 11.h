@@ -11,6 +11,7 @@
 typedef uint8_t uint8, byte;
 typedef uint16_t uint16, word;
 typedef uint32_t uint32;
+typedef unsigned int uint;
 
 #define WD(hi, lo) W((hi)<<8 | (lo))
 #define W(w) ((word)(w))
