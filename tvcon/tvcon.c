@@ -361,8 +361,8 @@ initsymbolmap(void)
 	symbolmap['!'] = 002 | MOD_LSHIFT;
 	symbolmap['"'] = 003 | MOD_LSHIFT;
 	symbolmap['#'] = 004 | MOD_LSHIFT;
-	symbolmap['%'] = 006 | MOD_LSHIFT;
 	symbolmap['$'] = 005 | MOD_LSHIFT;
+	symbolmap['%'] = 006 | MOD_LSHIFT;
 	symbolmap['&'] = 007 | MOD_LSHIFT;
 	symbolmap['\''] = 010 | MOD_LSHIFT;
 	symbolmap['('] = 011 | MOD_LSHIFT;
