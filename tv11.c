@@ -379,6 +379,7 @@ main(int argc, char *argv[])
 
 	host = argv[0];
 	ten11.cycle = 0;
+	ten11.fd = -1;
 	loadmem("mem.txt");
 
 //	if(loadpt("maindec/MAINDEC-11-D0NA-PB.ptap"))
