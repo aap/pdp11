@@ -7,14 +7,9 @@
 
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 
-#include <pthread.h>
 #include <SDL.h>
+#include <SDL_net.h>
 
 #include "../args.h"
 
@@ -42,7 +37,7 @@ uint32 fb[WIDTH*HEIGHT];
 uint32 *finalfb;
 uint32 fg = 0x4AFF0000; // Phosphor P39, peak at 525nm.
 uint32 bg = 0x00000000;
-int fd;
+TCPsocket sock;
 int backspace = 017; /* Knight key code for BS. */
 uint32 userevent;
 int updatebuf = 1;
@@ -95,42 +90,19 @@ msgheader(uint8 *b, uint8 type, uint16 length)
 	b[2] = type;
 }
 
-int
+TCPsocket
 dial(char *host, int port)
 {
-	int flag;
-	char portstr[32];
-	int sockfd;
-	struct addrinfo *result, *rp, hints;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-
-	snprintf(portstr, 32, "%d", port);
-	if(getaddrinfo(host, portstr, &hints, &result)){
-		perror("error: getaddrinfo");
-		return -1;
-	}
-
-	for(rp = result; rp; rp = rp->ai_next){
-		sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if(sockfd < 0)
-			continue;
-		if(connect(sockfd, rp->ai_addr, rp->ai_addrlen) >= 0)
-			goto win;
-		close(sockfd);
-	}
-	freeaddrinfo(result);
-	perror("error");
-	return -1;
-
-win:
-	flag = 1;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
-
-	freeaddrinfo(result);
-	return sockfd;
+	IPaddress address;
+	TCPsocket s;
+	if (SDLNet_ResolveHost (&address, host, port) == -1)
+		panic("Error resolving host name %s: %s\n",
+		      host, SDLNet_GetError());
+	s = SDLNet_TCP_Open (&address);
+	if (s == 0)
+		panic("Error connecting to %s: %s\n",
+		      host, SDLNet_GetError());
+	return s;
 }
 
 void
@@ -221,28 +193,25 @@ draw(void)
 }
 
 int
-writen(int fd, void *data, int n)
+writen(TCPsocket s, void *data, int n)
 {
-	int m;
-
-	while(n > 0){
-		m = write(fd, data, n);
-		if(m == -1)
-			return -1;
-		data += m;
-		n -= m;
-	}
-
+	if (SDLNet_TCP_Send (s, data, n) < n)
+		return -1;
 	return 0;
 }
 
 int
-readn(int fd, void *data, int n)
+readn(TCPsocket s, void *data, int n)
 {
 	int m;
 
+	/* The documentation claims a successful call to SDLNet_TCP_Recv
+	 * should always return n, and that anything less is an error.
+	 * This doesn't appear to be true, so this loop is necessary
+	 * to collect the full buffer. */
+
 	while(n > 0){
-		m = read(fd, data, n);
+		m = SDLNet_TCP_Recv (s, data, n);
 		if(m <= 0)
 			return -1;
 		data += m;
@@ -481,7 +450,7 @@ textinput(char *text)
 
 	msgheader(largebuf, MSG_KEYDN, 3);
 	w2b(largebuf+3, key);
-	writen(fd, largebuf, 5);
+	writen(sock, largebuf, 5);
 }
 
 /* Return true if this key will come as a TextInput event.*/
@@ -576,7 +545,7 @@ keydown(SDL_Keysym keysym, Uint8 repeat)
 
 	msgheader(largebuf, MSG_KEYDN, 3);
 	w2b(largebuf+3, key);
-	writen(fd, largebuf, 5);
+	writen(sock, largebuf, 5);
 //	printf("down: %o\n", key);
 }
 
@@ -675,21 +644,21 @@ getfb(void)
 	w2b(b+2, y);
 	w2b(b+4, w);
 	w2b(b+6, h);
-	writen(fd, largebuf, 11);
+	writen(sock, largebuf, 11);
 }
 
 void
 getdpykbd(void)
 {
 	uint8 buf[2];
-	if(readn(fd, buf, 2) == -1){
+	if(readn(sock, buf, 2) == -1){
 		fprintf(stderr, "protocol botch\n");
 		return;
 	}
 	printf("%o %o\n", buf[0], buf[1]);
 }
 
-void*
+int
 readthread(void *arg)
 {
 	uint16 len;
@@ -701,10 +670,10 @@ readthread(void *arg)
 	SDL_memset(&ev, 0, sizeof(SDL_Event));
 	ev.type = userevent;
 
-	while(readn(fd, &len, 2) != -1){
+	while(readn(sock, &len, 2) != -1){
 		len = b2w((uint8*)&len);
 		b = largebuf;
-		readn(fd, b, len);
+		readn(sock, b, len);
 		type = *b++;
 		switch(type){
 		case MSG_FB:
@@ -723,7 +692,7 @@ readthread(void *arg)
 			break;
 
 		case MSG_CLOSE:
-			close(fd);
+			SDLNet_TCP_Close(sock);
 			exit(0);
 
 		default:
@@ -752,7 +721,7 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	pthread_t th1, th2;
+	SDL_Thread *th1;
 	SDL_Event event;
 	int running;
 	char *p;
@@ -760,6 +729,7 @@ main(int argc, char *argv[])
 	char *host;
 
 	SDL_Init(SDL_INIT_EVERYTHING);
+	SDLNet_Init();
 	SDL_StopTextInput();
 
 	port = 11100;
@@ -801,7 +771,7 @@ main(int argc, char *argv[])
 
 	initkeymap();
 
-	fd = dial(host, port);
+	sock = dial(host, port);
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
@@ -829,7 +799,7 @@ main(int argc, char *argv[])
 	getdpykbd();
 	getfb();
 
-	pthread_create(&th1, nil, readthread, nil);
+	th1 = SDL_CreateThread(readthread, "Read thread", nil);
 
 	running = 1;
 	while(running){
