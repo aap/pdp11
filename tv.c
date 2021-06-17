@@ -164,6 +164,52 @@ alu(int op, word a, word b)
 	return a;
 }
 
+static int
+oc_child(void)
+{
+	int fd[2];
+	pid_t pid;
+
+	const char *prog = getenv("TV11KMS");
+	if(prog == NULL)
+		return -1;
+
+	if(pipe(fd) == -1)
+		return -1;
+
+	pid = fork();
+	if(pid == -1)
+		return -1;
+	else if(pid == 0) {
+		close(0);
+		dup2(fd[0], 0);
+		close(fd[0]);
+		close(fd[1]);
+		execlp(prog, prog, NULL);
+		exit(1);
+	}
+
+	close(fd[0]);
+	return fd[1];
+	
+}
+
+static void
+oc_output(unsigned char bits)
+{
+	static int old = -1;
+	static int fd = -1;
+
+	if(bits != old) {
+		if(fd == -1)
+			fd = oc_child();
+
+		write(fd, &bits, 1); /* error? lol yolo */
+	}
+
+	old = bits;
+}
+
 int
 dato_tv(Bus *bus, void *dev)
 {
@@ -202,6 +248,7 @@ dato_tv(Bus *bus, void *dev)
 		return 0;
 	case KMS:
 		tv->kms = d & ~037;
+		oc_output ((tv->kms >> 8) & 017);
 		SETMASK(tv->kma_hi, (d&3)<<16, 3<<16);
 		return 0;
 	case KMA:
