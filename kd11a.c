@@ -434,9 +434,10 @@ ok:	return 1;
 static int
 datix(KD11A *cpu, int pse)
 {
-trace("dati%s %06o %o: ", pse ? "p" : "", cpu->ba, cpu->flags);
+trace("dati%s %o %06o ", pse ? "p" : "", cpu->flags, cpu->ba);
 	if(remapBA(cpu, 0))
 		return 1;
+trace(" phys(%o) <- ", PBA);
 	if(checkbus(cpu, 0, pse))
 		return 1;
 
@@ -466,9 +467,10 @@ static int
 dato(KD11A *cpu, int b)
 {
 	UNIBUS_DATA = D;
-trace("dato %06o %06o %o\n", cpu->ba, cpu->bus->data, cpu->flags);
+trace("dato %o %06o -> %06o ", cpu->flags, cpu->bus->data, cpu->ba);
 	if(remapBA(cpu, 1))
 		return 1;
+trace(" phys(%o)\n", PBA);
 
 	codes(cpu);
 
@@ -918,7 +920,6 @@ step(KD11A *cpu)
 
 	trace("fetch from %06o\n", cpu->r[PC]);
 	tracestate(cpu);
-
 	sp = USER ? USP : SP;
 
 	// FET00/01
@@ -1421,7 +1422,7 @@ ktinstr:
 			cpu->state = STATE_HALTED;
 			return;
 		}
-	case 1:	TR(WAIT); printf("waiting\n"); cpu->state = STATE_WAITING; SVC;
+	case 1:	TR(WAIT); cpu->state = STATE_WAITING; SVC;
 	case 2:	TR(RTI);
 	rti:
 		// RTI00

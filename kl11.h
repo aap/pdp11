@@ -1,22 +1,23 @@
-// stolen from KD11-B for now
-
 typedef struct KL11 KL11;
 struct KL11
 {
+	int maint;
+
 	/* keyboard */
-	int rcd_busy;
-	int rcd_rdr_enab;
-	int rcd_int_enab;
-	int rcd_int;
-	int rcd_da;
-	byte rcd_b;
+	int rdr_int_enab;
+	int rdr_busy;
+	int rdr_enab;
+	int rdr_done;
+	byte rdr_buf;
 
 	/* printer */
-	int xmit_int_enab;
-	int xmit_maint;
-	int xmit_int;
-	int xmit_tbmt;
-	byte xmit_b;
+	int pun_int_enab;
+	int pun_ready;
+	int pun_halt;
+	byte pun_buf;
+
+
+	int intr_flags;
 
 	int ttyfd;
 };

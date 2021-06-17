@@ -29,7 +29,7 @@ struct KD11B
 	int rcd_rdr_enab;
 	int rcd_int_enab;
 	int rcd_int;
-	int rcd_da;
+	int rcd_da;	// data available
 	byte rcd_b;
 
 	/* printer */

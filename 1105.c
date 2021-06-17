@@ -152,7 +152,7 @@ botch:
 }
 
 void
-dumpmem(word start, word end)
+dumpmem(int start, int end)
 {
 	start >>= 1;
 	end >>= 1;

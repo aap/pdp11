@@ -1,6 +1,9 @@
 #include "11.h"
 #include "kl11.h"
 
+// not super accurate
+// maintenance mode not implemented
+
 int
 dati_kl11(Bus *bus, void *dev)
 {
@@ -9,21 +12,20 @@ dati_kl11(Bus *bus, void *dev)
 		switch(bus->addr&6){
 		/* Receive */
 		case 0:
-			bus->data = kl->rcd_int_enab<<6 |
-				kl->rcd_int<<7 |
-				kl->rcd_busy<<1;
+			bus->data = kl->rdr_int_enab<<6 |
+				kl->rdr_done<<7 |
+				kl->rdr_busy<<11;
 			break;
 		case 2:
-			bus->data = kl->rcd_b;
-			kl->rcd_b = 0;
-			kl->rcd_da = 0;
-			kl->rcd_int = 0;
+			bus->data = kl->rdr_buf;
+			kl->rdr_buf = 0;
+			kl->rdr_done = 0;
 			break;
 		/* Transmit */
 		case 4:
-			bus->data = kl->xmit_maint<<2 |
-				kl->xmit_int_enab<<6 |
-				kl->xmit_int<<7;
+			bus->data = kl->maint<<2 |
+				kl->pun_int_enab<<6 |
+				kl->pun_ready<<7;
 			break;
 		case 6:
 			/* write only */
@@ -45,10 +47,10 @@ dato_kl11(Bus *bus, void *dev)
 		/* Receive */
 		case 0:
 			// TODO: RDR ENAB
-			kl->rcd_rdr_enab = bus->data & 1;
-			if(!kl->rcd_int_enab && bus->data&0100 && kl->rcd_da)
-				kl->rcd_int = 1;
-			kl->rcd_int_enab = bus->data>>6 & 1;
+			kl->rdr_enab = bus->data & 1;
+			kl->rdr_int_enab = bus->data>>6 & 1;
+			if(kl->rdr_done && kl->rdr_int_enab)
+				kl->intr_flags |= 2;
 			break;
 		case 2:
 			/* read only */
@@ -56,15 +58,15 @@ dato_kl11(Bus *bus, void *dev)
 		/* Transmit */
 		case 4:
 			// TODO: MAINT
-			kl->xmit_maint = bus->data>>2 & 1;
-			if(!kl->xmit_int_enab && bus->data&0100 && kl->xmit_tbmt)
-				kl->xmit_int = 1;
-			kl->xmit_int_enab = bus->data>>6 & 1;
+			kl->maint = bus->data>>2 & 1;
+			kl->pun_int_enab = bus->data>>6 & 1;
+			if(kl->pun_ready && kl->pun_int_enab)
+				kl->intr_flags |= 1;
 			break;
 		case 6:
-			kl->xmit_b = bus->data;
-			kl->xmit_tbmt = 0;
-			kl->xmit_int = 0;
+			kl->pun_buf = bus->data;
+			kl->pun_halt = 0;
+			kl->pun_ready = 0;
 			break;
 
 		/* respond but don't do anything */
@@ -98,32 +100,34 @@ svc_kl11(Bus *bus, void *dev)
 //	if(NNN == 20){
 	if(NNN == 20000){
 	/* transmit */
-	if(!kl->xmit_tbmt){
-		uint8 c = kl->xmit_b & 0177;
+	if(!kl->pun_halt){
+		uint8 c = kl->pun_buf & 0177;
 		write(kl->ttyfd, &c, 1);
 #ifdef AUTODIAG
 	extern int diagpassed;
 	if(c == '\a')
 		diagpassed = 1;
 #endif
-		kl->xmit_tbmt = 1;
-		kl->xmit_int = 1;
+		kl->pun_halt = 1;
+		kl->pun_ready = 1;
+		if(kl->pun_int_enab)
+			kl->intr_flags |= 1;
 	}
 
 	/* receive */
 	if(hasinput(kl->ttyfd)){
-		kl->rcd_busy = 1;
-		kl->rcd_rdr_enab = 0;
-		read(kl->ttyfd, &kl->rcd_b, 1);
-		kl->rcd_da = 1;
-		kl->rcd_busy = 0;
-		kl->rcd_int = 1;
+		kl->rdr_busy = 1;
+		kl->rdr_enab = 0;
+		read(kl->ttyfd, &kl->rdr_buf, 1);
+		kl->rdr_busy = 0;
+		kl->rdr_done = 1;
+		if(kl->rdr_int_enab)
+			kl->intr_flags |= 2;
 	}
 	NNN = 0;
 	}
 
-	return kl->rcd_int && kl->rcd_int_enab ||
-		kl->xmit_int && kl->xmit_int_enab ? 4 : 0;
+	return kl->intr_flags ? 4 : 0;
 }
 
 
@@ -131,13 +135,16 @@ int
 bg_kl11(void *dev)
 {
 	KL11 *kl = dev;
-	if(kl->rcd_int && kl->rcd_int_enab){
-		kl->rcd_int = 0;
+
+	// reader interrupt
+	if(kl->intr_flags & 2){
+		kl->intr_flags &= ~2;
 		return 060;
 	}
 
-	if(kl->xmit_int && kl->xmit_int_enab){
-		kl->xmit_int = 0;
+	// punch interrupt
+	if(kl->intr_flags & 1){
+		kl->intr_flags &= ~1;
 		return 064;
 	}
 	assert(0);	// can't happen
@@ -149,16 +156,17 @@ void
 reset_kl11(void *dev)
 {
 	KL11 *kl = dev;
-	kl->rcd_busy = 0;
-	kl->rcd_rdr_enab = 0;
-	kl->rcd_int_enab = 0;
-	kl->rcd_int = 0;
-	kl->rcd_da = 0;
-	kl->rcd_b = 0;
+	kl->rdr_busy = 0;
+	kl->rdr_enab = 0;
+	kl->rdr_int_enab = 0;
+	kl->rdr_done = 0;
+	kl->rdr_buf = 0;
 
-	kl->xmit_int_enab = 0;
-	kl->xmit_maint = 0;
-	kl->xmit_int = 1;
-	kl->xmit_tbmt = 1;
-	kl->xmit_b = 0;
+	kl->pun_int_enab = 0;
+	kl->maint = 0;
+	kl->pun_ready = 1;
+	kl->pun_halt = 1;
+	kl->pun_buf = 0;
+
+	kl->intr_flags = 0;
 }

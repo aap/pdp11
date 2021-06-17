@@ -2,10 +2,14 @@
 #include "kd11a.h"
 #include "kw11.h"
 #include "kl11.h"
+#include "rk11.h"
 #include "args.h"
 
+#include <signal.h>
+
 // in words
-#define MEMSIZE (12*1024)
+//#define MEMSIZE (12*1024)
+#define MEMSIZE (124*1024)	// max size last 4k is IO
 
 uint16 memory[MEMSIZE];
 
@@ -156,7 +160,7 @@ botch:
 }
 
 void
-dumpmem(word start, word end)
+dumpmem(int start, int end)
 {
 	start >>= 1;
 	end >>= 1;
@@ -168,12 +172,12 @@ KD11A cpu;
 Bus bus;
 KW11 kw11;
 KL11 kl11;
+RK11 rk11;
 Memory memdev = { memory, 0, MEMSIZE };
 Busdev membusdev = { nil, &memdev, dati_mem, dato_mem, datob_mem, svc_null, nil, reset_null };
-KE11 ke11;
-Busdev kebusdev = { nil, &ke11, dati_ke11, dato_ke11, datob_ke11, svc_null, nil, reset_ke11 };
 Busdev klbusdev = { nil, &kl11, dati_kl11, dato_kl11, datob_kl11, svc_kl11, bg_kl11, reset_kl11 };
 Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_kw11, reset_kw11 };
+Busdev rkbusdev = { nil, &rk11, dati_rk11, dato_rk11, datob_rk11, svc_rk11, bg_rk11, reset_rk11 };
 
 char *argv0;
 
@@ -222,7 +226,7 @@ main(int argc, char *argv[])
 	busadddev(&bus, &membusdev);
 	busadddev(&bus, &kwbusdev);
 	busadddev(&bus, &klbusdev);
-	busadddev(&bus, &kebusdev);
+	busadddev(&bus, &rkbusdev);
 
 	ARGBEGIN{
 	}ARGEND;
@@ -289,7 +293,16 @@ main(int argc, char *argv[])
 		return 0;
 #endif
 
+	// to boot UNIX v6
+	attach_rk05(&rk11, 0, "unix6/disk0.rk");
+	attach_rk05(&rk11, 1, "unix6/disk1.rk");
+	attach_rk05(&rk11, 2, "unix6/disk2.rk");
+
+	signal(SIGINT, sigint);
+
 	cpu.r[7] = 0200;
+	cpu.sw = 0000001;
+//	cpu.sw = 0173030;
 //	cpu.sw = 0104000;
 	run(&cpu);
 

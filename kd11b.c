@@ -159,8 +159,8 @@ trace("dati %06o: ", cpu->ba);
 		/* Receive */
 		case 0160:
 			cpu->bus->data = cpu->rcd_int_enab<<6 |
-				cpu->rcd_int<<7 |
-				cpu->rcd_busy<<1;
+				cpu->rcd_da<<7 |
+				cpu->rcd_busy<<11;
 			goto ok;
 		case 0162:
 			cpu->bus->data = cpu->rcd_b;
@@ -172,7 +172,7 @@ trace("dati %06o: ", cpu->ba);
 		case 0164:
 			cpu->bus->data = cpu->xmit_maint<<2 |
 				cpu->xmit_int_enab<<6 |
-				cpu->xmit_int<<7;
+				cpu->xmit_tbmt<<7;
 			goto ok;
 		case 0166:
 			/* write only */
