@@ -298,8 +298,6 @@ main(int argc, char *argv[])
 	attach_rk05(&rk11, 1, "unix6/disk1.rk");
 	attach_rk05(&rk11, 2, "unix6/disk2.rk");
 
-	signal(SIGINT, sigint);
-
 	cpu.r[7] = 0200;
 	cpu.sw = 0000001;
 //	cpu.sw = 0173030;
