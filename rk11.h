@@ -15,7 +15,6 @@ struct RK05
 	int surf;	// surface
 	int wc;	// word counter
 
-	byte buf[512];
 	word dsb;
 };
 
@@ -38,6 +37,8 @@ struct RK11
 
 	int d;	// drive selector from rkda
 	RK05 drives[8];
+
+	byte buf[512];
 };
 int dati_rk11(Bus *bus, void *dev);
 int dato_rk11(Bus *bus, void *dev);
@@ -48,6 +49,3 @@ void reset_rk11(void *dev);
 
 void attach_rk05(RK11 *rk, int n, char *path);
 void detach_rk05(RK11 *rk, int n);
-void start_rk05(RK05 *drive, RK11 *rk);
-void reset_rk05(RK05 *drive);
-void svc_rk05(RK05 *drive, RK11 *rk, int selected);

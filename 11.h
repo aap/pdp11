@@ -75,6 +75,9 @@ struct Memory
 int dati_mem(Bus *bus, void *dev);
 int dato_mem(Bus *bus, void *dev);
 int datob_mem(Bus *bus, void *dev);
+int dati_rom(Bus *bus, void *dev);
+int dato_rom(Bus *bus, void *dev);
+int datob_rom(Bus *bus, void *dev);
 
 typedef struct KE11 KE11;
 struct KE11

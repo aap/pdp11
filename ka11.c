@@ -1,6 +1,10 @@
 #include "11.h"
 #include "ka11.h"
 
+int dotrace;
+#undef trace
+#define trace if(dotrace) printf
+
 enum {
 	PSW_PR = 0340,
 	PSW_T = 020,
@@ -305,6 +309,8 @@ step(KA11 *cpu)
 
 	oldpsw = PSW;
 
+	trace("fetch from %06o\n", PC);
+	tracestate(cpu);
 	cpu->ba = PC;
 	PC += 2;	/* increment even on bus error */
 	IN(cpu->ir);

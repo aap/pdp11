@@ -2,10 +2,14 @@
 #include "ka11.h"
 #include "kw11.h"
 #include "kl11.h"
+#include "rf11.h"
+#include "rk11.h"
+#include "dc11_fake.h"
 #include "args.h"
 
 // in words
-#define MEMSIZE (12*1024)
+//#define MEMSIZE (12*1024)
+#define MEMSIZE (16*1024)
 
 uint16 memory[MEMSIZE];
 
@@ -162,16 +166,63 @@ dumpmem(int start, int end)
 		printf("%06o: %06o\n", start<<1, memory[start]);
 }
 
+// UNIX bootrom
+word rom[32] = {
+	// RF11 boot
+	0012700,	// mov $177472,r0
+	0177472,
+	0012740,	// mov $3,-(r0)
+	0000003,
+	0012740,	// mov $140000,-(r0)
+	0140000,
+	0012740,	// mov $54000,-(r0)
+	0054000,
+	0012740,	// mov $-2000,-(r0)
+	0176000,
+	0012740,	// mov $5,-(r0)
+	0000005,
+	0105710,	// tstb (r0)
+	0002376,	// bge .-2
+	0000137,	// jmp *$54000
+	0054000,
+
+	// TC11 boot
+	0012700,	// mov $177350,r0
+	0177350,
+	0005040,	// clr -(r0)
+	0010040,	// mov r0,-(r0)
+	0012740,	// mov $3,-(r0)
+	0000003,
+	0105710,	// tstb (r0)
+	0002376,	// bge .-2
+	0005737,	// tst *$177350
+	0177350,
+	0001377,	// bne .
+	0112710,	// movb $5,(r0)
+	0000005,
+	0105710,	// tstb (r0)
+	0002376,	// bge .-2
+	0005007		// clr pc
+};
+
 KA11 cpu;
 Bus bus;
 KW11 kw11;
 KL11 kl11;
+RF11 rf11;
+RK11 rk11;
+RK11 dc11;
 Memory memdev = { memory, 0, MEMSIZE };
+Memory romdev = { rom, 0773700>>1, 0774000>>1 };
 Busdev membusdev = { nil, &memdev, dati_mem, dato_mem, datob_mem, svc_null, nil, reset_null };
+Busdev rombusdev = { nil, &romdev, dati_rom, dato_rom, datob_rom, svc_null, nil, reset_null };
 KE11 ke11;
 Busdev kebusdev = { nil, &ke11, dati_ke11, dato_ke11, datob_ke11, svc_null, nil, reset_ke11 };
 Busdev klbusdev = { nil, &kl11, dati_kl11, dato_kl11, datob_kl11, svc_kl11, bg_kl11, reset_kl11 };
 Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_kw11, reset_kw11 };
+Busdev rfbusdev = { nil, &rf11, dati_rf11, dato_rf11, datob_rf11, svc_rf11, bg_rf11, reset_rf11 };
+Busdev rkbusdev = { nil, &rk11, dati_rk11, dato_rk11, datob_rk11, svc_rk11, bg_rk11, reset_rk11 };
+Busdev dcbusdev = { nil, &dc11, dati_dc11, dato_dc11, datob_dc11, svc_dc11, bg_dc11, reset_dc11 };
 
 char *argv0;
 
@@ -215,6 +266,10 @@ main(int argc, char *argv[])
 	busadddev(&bus, &kwbusdev);
 	busadddev(&bus, &klbusdev);
 	busadddev(&bus, &kebusdev);
+	busadddev(&bus, &rfbusdev);
+	busadddev(&bus, &rkbusdev);
+	busadddev(&bus, &dcbusdev);
+	busadddev(&bus, &rombusdev);
 
 	ARGBEGIN{
 	}ARGEND;
@@ -249,8 +304,15 @@ main(int argc, char *argv[])
 		return 0;
 #endif
 
-	cpu.r[7] = 0200;
+	// to boot UNIX v1
+	attach_rs11(&rf11, 0, "unix1/rf0.dsk");
+	attach_rs11(&rf11, 1, "unix1/rf1.dsk");
+	attach_rk05(&rk11, 0, "unix1/rk0.dsk");
+
+//	cpu.r[7] = 0200;
 //	cpu.sw = 0104000;
+	cpu.r[7] = 0173700;
+	cpu.sw = 0173700;
 	run(&cpu);
 
 	return 0;

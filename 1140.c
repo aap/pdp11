@@ -3,6 +3,7 @@
 #include "kw11.h"
 #include "kl11.h"
 #include "rk11.h"
+#include "dc11_fake.h"
 #include "args.h"
 
 #include <signal.h>
@@ -168,16 +169,50 @@ dumpmem(int start, int end)
 		printf("%06o: %06o\n", start<<1, memory[start]);
 }
 
+// BM792-YB bootrom
+// must set switch to device's WC address
+word rom[32] = {
+	0013701,	// mov @#177570,r1	; read switches
+	0177570,
+	0000005,	// begin: reset
+	0010100,	// mov r1,r2
+	0012710,	// mov #-256,@r0	; set WC
+	0177400,
+	0020027,	// cmp r0,#177344	; dectape?
+	0177344,
+	0001007,	// bne start	; no
+	0012740,	// mov #4002,-(r0)	; yes, rewind tape
+	0004002,
+	0005710,	// tst @r0	; wait for error
+	0100376,	// bpl .-2
+	0005740,	// tst -(r0)	; endzone?
+	0100363,	// bpl begin	; try again
+	0022020,	// cmp (r0)+,(r0)+
+	0012740,	// start: mov #5,-(r0)	; start
+	0000005,
+	0105710,	// tstb @r0	; wait for done
+	0100376,	// bpl .-2
+	0005710,	// tst @r0	; error?
+	0100754,	// bmi begin	; try again
+	0105010,	// clrb @r0	; stop dectape
+	0000137,	// jmp @#0
+	0000000
+};
+
 KD11A cpu;
 Bus bus;
 KW11 kw11;
 KL11 kl11;
 RK11 rk11;
+DC11 dc11;
 Memory memdev = { memory, 0, MEMSIZE };
+Memory romdev = { rom, 0773100>>1, 0773200>>1 };
 Busdev membusdev = { nil, &memdev, dati_mem, dato_mem, datob_mem, svc_null, nil, reset_null };
+Busdev rombusdev = { nil, &romdev, dati_rom, dato_rom, datob_rom, svc_null, nil, reset_null };
 Busdev klbusdev = { nil, &kl11, dati_kl11, dato_kl11, datob_kl11, svc_kl11, bg_kl11, reset_kl11 };
 Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_kw11, reset_kw11 };
 Busdev rkbusdev = { nil, &rk11, dati_rk11, dato_rk11, datob_rk11, svc_rk11, bg_rk11, reset_rk11 };
+Busdev dcbusdev = { nil, &dc11, dati_dc11, dato_dc11, datob_dc11, svc_dc11, bg_dc11, reset_dc11 };
 
 char *argv0;
 
@@ -227,6 +262,8 @@ main(int argc, char *argv[])
 	busadddev(&bus, &kwbusdev);
 	busadddev(&bus, &klbusdev);
 	busadddev(&bus, &rkbusdev);
+	busadddev(&bus, &dcbusdev);
+	busadddev(&bus, &rombusdev);
 
 	ARGBEGIN{
 	}ARGEND;
@@ -298,8 +335,9 @@ main(int argc, char *argv[])
 	attach_rk05(&rk11, 1, "unix6/disk1.rk");
 	attach_rk05(&rk11, 2, "unix6/disk2.rk");
 
-	cpu.r[7] = 0200;
-	cpu.sw = 0000001;
+	cpu.r[7] = 0173100;
+	cpu.sw = 0177406;	// RK11 boot
+//	cpu.sw = 0000001;
 //	cpu.sw = 0173030;
 //	cpu.sw = 0104000;
 	run(&cpu);

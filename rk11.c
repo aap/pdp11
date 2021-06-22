@@ -62,6 +62,10 @@ enum {
 };
 #define ISXFER(func) ((056>>(func))&1)
 
+void start_rk05(RK05 *drive, RK11 *rk);
+void reset_rk05(RK05 *drive);
+void svc_rk05(RK05 *drive, RK11 *rk, int selected);
+
 int
 dati_rk11(Bus *bus, void *dev)
 {
@@ -238,6 +242,7 @@ svc_rk11(Bus *bus, void *dev)
 		rk->rkcs &= ~ERR;
 
 	return (rk->rkcs&IDE) &&
+// TODO: probably just have one interrupt bit?
 	       (rk->done || (rk->rkcs&HE) || (rk->rkcs&ERR) && (rk->rkcs&SSE)) ?
 		5 : 0;
 }
@@ -258,7 +263,6 @@ reset_rk11(void *dev)
 {
 	int i;
 	RK11 *rk = dev;
-	// TODO
 	rk->rkds = 0;
 	rk->rker = 0;
 	rk->rkcs = RDY;
@@ -382,7 +386,7 @@ svc_rk05(RK05 *drive, RK11 *rk, int selected)
 		if(drive->wc == 0){
 			int pos = blockaddr(drive->cyl, drive->surf, drive->sc)*512;
 			fseek(drive->fp, pos, 0);
-			fread(drive->buf, 1, 512, drive->fp);
+			fread(rk->buf, 1, 512, drive->fp);
 			// rewind so we can write back easily
 			fseek(drive->fp, pos, 0);
 
@@ -394,7 +398,7 @@ svc_rk05(RK05 *drive, RK11 *rk, int selected)
 			rk->rkwc++;
 
 			if(drive->func == FR_READ){
-				drive->dsb = WD(drive->buf[drive->wc*2+1], drive->buf[drive->wc*2]);
+				drive->dsb = WD(rk->buf[drive->wc*2+1], rk->buf[drive->wc*2]);
 				rk->rkdb = drive->dsb;
 
 				// write to bus
@@ -412,8 +416,8 @@ svc_rk05(RK05 *drive, RK11 *rk, int selected)
 				rk->rkdb = rk->bus->data;
 
 				drive->dsb = rk->rkdb;
-				drive->buf[drive->wc*2] = drive->dsb;
-				drive->buf[drive->wc*2+1] = drive->dsb>>8;
+				rk->buf[drive->wc*2] = drive->dsb;
+				rk->buf[drive->wc*2+1] = drive->dsb>>8;
 			}
 
 			// transfer finished
@@ -441,7 +445,7 @@ svc_rk05(RK05 *drive, RK11 *rk, int selected)
 				// write back
 				if(drive->func == FR_WRITE ||
 				   drive->func == FR_WRITE_CHECK)
-					fwrite(drive->buf, 1, 512, drive->fp);
+					fwrite(rk->buf, 1, 512, drive->fp);
 				rk->state = 0;
 			}
 
