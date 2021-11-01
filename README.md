@@ -6,6 +6,7 @@ Contents
 This is based on the code I wrote for the [Knight TV emulation](https://github.com/aap/tv11)
 * a PDP-11/20 cpu (KA11) as a modified KD11B. Not implemented from the schematics (yet?). Passing ZKAAA-ZKAMA.
 * a PDP-11/40 cpu (KD11A) implemented from the microcode and schematics, but not emulating the actual microcode. With KJ11 and KT11.
+* a PDP-11/40 cpu running actual microcode. It needs a PiDP-11 panel and since as of now it is about 4-5x too slow on a raspi3 it is not finished.
 * the beginnings of a PDP-11/45 (KB11A) cpu. Implemented from the schematics and running the microcode. This machine is a beast so it doesn't do a whole lot at all yet.
 * KL11 console
 * KW11 line clock

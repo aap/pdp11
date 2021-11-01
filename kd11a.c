@@ -305,6 +305,7 @@ checkbus(KD11A *cpu, int wr, int pse)
 {
 	int err = 0;
 	if((wr|pse) && !(cpu->mode&2) && cpu->flags&FLAG_CKOVF){
+// TODO: probably should mask away BA00
 		if(BA == 0177776 ||	// PSW
 #ifdef KJ11
 		   BA == 0177774 ||	// SLR
