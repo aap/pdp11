@@ -4,9 +4,8 @@
 #include "kl11.h"
 #include "rk11.h"
 #include "dc11_fake.h"
-#include "args.h"
 
-#include <signal.h>
+//#include <signal.h>
 
 // in words
 //#define MEMSIZE (12*1024)
@@ -75,7 +74,7 @@ sgn(word w)
 word
 sxt(byte b)
 {
-	return (word)(int8_t)b;
+	return (word)(int8)b;
 }
 
 void
@@ -199,6 +198,8 @@ word rom[32] = {
 	0000000
 };
 
+#include "m9312rom.inc"
+
 KD11A cpu;
 Bus bus;
 KW11 kw11;
@@ -207,8 +208,12 @@ RK11 rk11;
 DC11 dc11;
 Memory memdev = { memory, 0, MEMSIZE };
 Memory romdev = { rom, 0773100>>1, 0773200>>1 };
+Memory romdev9312 = { m9312rom, 0765000>>1, 0766000>>1 };
+Memory romdev9312X = { m9312rom2, 0773000>>1, 0774000>>1 };
 Busdev membusdev = { nil, &memdev, dati_mem, dato_mem, datob_mem, svc_null, nil, reset_null };
 Busdev rombusdev = { nil, &romdev, dati_rom, dato_rom, datob_rom, svc_null, nil, reset_null };
+Busdev rombusdev9312 = { nil, &romdev9312, dati_rom, dato_rom, datob_rom, svc_null, nil, reset_null };
+Busdev rombusdev9312X = { nil, &romdev9312X, dati_rom, dato_rom, datob_rom, svc_null, nil, reset_null };
 Busdev klbusdev = { nil, &kl11, dati_kl11, dato_kl11, datob_kl11, svc_kl11, bg_kl11, reset_kl11 };
 Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_kw11, reset_kw11 };
 Busdev rkbusdev = { nil, &rk11, dati_rk11, dato_rk11, datob_rk11, svc_rk11, bg_rk11, reset_rk11 };
@@ -253,7 +258,7 @@ rundiag(KD11A *cpu, char *ptfile)
 
 
 int
-main(int argc, char *argv[])
+xmain(int argc, char *argv[])
 {
 	memset(&cpu, 0, sizeof(KD11A));
 	memset(&bus, 0, sizeof(Bus));
@@ -263,7 +268,11 @@ main(int argc, char *argv[])
 	busadddev(&bus, &klbusdev);
 	busadddev(&bus, &rkbusdev);
 	busadddev(&bus, &dcbusdev);
-	busadddev(&bus, &rombusdev);
+//	busadddev(&bus, &rombusdev);	// mutually exclusive with the first M9312 ROM
+#ifndef AUTODIAG	// breaks some test
+	busadddev(&bus, &rombusdev9312);
+	busadddev(&bus, &rombusdev9312X);
+#endif
 
 	ARGBEGIN{
 	}ARGEND;
@@ -275,9 +284,7 @@ main(int argc, char *argv[])
 
 	reset(&cpu);
 
-	/* open a tty if it exists */
-	kl11.ttyfd = open("/tmp/tty", O_RDWR);
-	printf("tty connected to %d\n", kl11.ttyfd);
+	ttyopen(&kl11.tty);
 
 #ifdef AUTODIAG
 	printf("running diags\n");
@@ -335,8 +342,16 @@ main(int argc, char *argv[])
 	attach_rk05(&rk11, 1, "unix6/disk1.rk");
 	attach_rk05(&rk11, 2, "unix6/disk2.rk");
 
-	cpu.r[7] = 0173100;
-	cpu.sw = 0177406;	// RK11 boot
+	// RT11
+//	attach_rk05(&rk11, 0, "rt11/rtv40rk.dsk");
+//	attach_rk05(&rk11, 0, "dos11/dos_rk.dsk");
+
+//	cpu.r[7] = 0173100;
+//	cpu.sw = 0177406;	// RK11 boot
+
+	cpu.r[7] = 0165020;	// M9312 boot
+	cpu.sw = 0;
+
 //	cpu.sw = 0000001;
 //	cpu.sw = 0173030;
 //	cpu.sw = 0104000;

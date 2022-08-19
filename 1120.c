@@ -5,7 +5,6 @@
 #include "rf11.h"
 #include "rk11.h"
 #include "dc11_fake.h"
-#include "args.h"
 
 // in words
 //#define MEMSIZE (12*1024)
@@ -68,7 +67,7 @@ sgn(word w)
 word
 sxt(byte b)
 {
-	return (word)(int8_t)b;
+	return (word)(int8)b;
 }
 
 void
@@ -257,7 +256,7 @@ rundiag(KA11 *cpu, char *ptfile)
 
 
 int
-main(int argc, char *argv[])
+xmain(int argc, char *argv[])
 {
 	memset(&cpu, 0, sizeof(KA11));
 	memset(&bus, 0, sizeof(Bus));
@@ -281,9 +280,7 @@ main(int argc, char *argv[])
 
 	reset(&cpu);
 
-	/* open a tty if it exists */
-	kl11.ttyfd = open("/tmp/tty", O_RDWR);
-	printf("tty connected to %d\n", kl11.ttyfd);
+	ttyopen(&kl11.tty);
 
 #ifdef AUTODIAG
 	if(rundiag(&cpu, "maindec/ZKAAA0.BIN")) return 0;

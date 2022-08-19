@@ -1,17 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <ctype.h>
-#include <assert.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <time.h>
-
-typedef uint8_t uint8, byte;
-typedef uint16_t uint16, word;
-typedef uint32_t uint32;
-typedef unsigned int uint;
+#ifdef PLAN9
+#include "p9.h"
+#else
+#include "unix.h"
+#endif
 
 #define WD(hi, lo) W((hi)<<8 | (lo))
 #define W(w) ((word)(w))
@@ -20,20 +11,11 @@ typedef unsigned int uint;
 #define B7  0000200
 #define B15 0100000
 #define B31 020000000000
-#define nil NULL
 
 #define SETMASK(l, r, m) l = (((l)&~(m)) | ((r)&(m)))
 
-
 //#define trace printf
 #define trace(...)
-
-int hasinput(int fd);
-int readn(int fd, void *data, int n);
-int dial(char *host, int port);
-void serve(int port, void (*handlecon)(int, void*), void *arg);
-void nodelay(int fd);
-void sleep_ms (uint32 ms);
 
 word sgn(word w);
 word sxt(byte b);
@@ -92,3 +74,8 @@ int dati_ke11(Bus *bus, void *dev);
 int dato_ke11(Bus *bus, void *dev);
 int datob_ke11(Bus *bus, void *dev);
 void reset_ke11(void *dev);
+
+void initclock(Clock *clk);
+int handleclock(Clock *clk);
+int ttyopen(Tty *tty);
+int ttyinput(Tty *tty, char *c);

@@ -34,37 +34,6 @@ enum {
 
 #define CLOCKFREQ (1000000000/60)
 
-static struct timespec oldtime, newtime;
-
-static void
-initclock(void)
-{
-	clock_gettime(CLOCK_REALTIME, &newtime);
-	oldtime = newtime;
-}
-
-static void
-handleclock(KD11B *cpu)
-{
-	struct timespec diff;
-	clock_gettime(CLOCK_REALTIME, &newtime);
-	diff.tv_sec = newtime.tv_sec - oldtime.tv_sec;
-	diff.tv_nsec = newtime.tv_nsec - oldtime.tv_nsec;
-	if(diff.tv_nsec < 0){
-		diff.tv_nsec += 1000000000;
-		diff.tv_sec -= 1;
-	}
-	if(diff.tv_nsec >= CLOCKFREQ){
-		cpu->lc_clock = 1;
-		cpu->lc_int = 1;
-		oldtime.tv_nsec += CLOCKFREQ;
-		if(oldtime.tv_nsec >= 1000000000){
-			oldtime.tv_nsec -= 1000000000;
-			oldtime.tv_sec += 1;
-		}
-	}
-}
-
 static uint32
 ubxt(word a)
 {
@@ -728,11 +697,15 @@ void
 run(KD11B *cpu)
 {
 	int n;
+	char c;
 	cpu->state = STATE_RUNNING;
-	initclock();
+	initclock(&cpu->clock);
 	n = 0;
 	while(cpu->state != STATE_HALTED){
-		handleclock(cpu);
+		if(handleclock(&cpu->clock)){
+			cpu->lc_clock = 1;
+			cpu->lc_int = 1;
+		}
 
 		cpu->traps &= ~TRAP_CLK;
 		if(cpu->lc_int && cpu->lc_int_enab)
@@ -764,7 +737,7 @@ run(KD11B *cpu)
 		/* transmit */
 		if(!cpu->xmit_tbmt){
 			uint8 c = cpu->xmit_b & 0177;
-			write(cpu->ttyfd, &c, 1);
+			write(cpu->tty.fd, &c, 1);
 #ifdef AUTODIAG
 	extern int diagpassed;
 	if(c == '\a'){
@@ -777,10 +750,10 @@ run(KD11B *cpu)
 		}
 
 		/* receive */
-		if(hasinput(cpu->ttyfd)){
+		if(ttyinput(&cpu->tty, &c)){
 			cpu->rcd_busy = 1;
 			cpu->rcd_rdr_enab = 0;
-			read(cpu->ttyfd, &cpu->rcd_b, 1);
+			cpu->rcd_b = c;
 			cpu->rcd_da = 1;
 			cpu->rcd_busy = 0;
 			cpu->rcd_int = 1;

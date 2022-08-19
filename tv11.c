@@ -15,7 +15,6 @@ int diagpassed;
 #include "kl11.h"
 #endif
 #include "tv.h"
-#include "args.h"
 #include <stdarg.h>
 
 // in words
@@ -82,7 +81,7 @@ sgn(word w)
 word
 sxt(byte b)
 {
-	return (word)(int8_t)b;
+	return (word)(int8)b;
 }
 
 void
@@ -397,9 +396,7 @@ main(int argc, char *argv[])
 
 	reset(&cpu);
 
-	/* open a tty if it exists */
-	TTYDEV.ttyfd = open("/tmp/tty", O_RDWR);
-	printf("tty connected to %d\n", TTYDEV.ttyfd);
+	ttyopen(&TTYDEV.tty);
 
 	/* start the two threads for listening for
 	 * and handling TV display connections */

@@ -228,7 +228,7 @@ setMM(KD11A *cpu, int mm)
 	case 010: cpu->mode = cpu->mtp ? cpu->prev : cpu->cur; break;
 	case 014: cpu->mode = cpu->mfp ? cpu->prev : cpu->cur; break;
 	}
-	cpu->relocate = (cpu->sr0&1) || (cpu->sr0&400 && mm&1);
+	cpu->relocate = (cpu->sr0&1) || (cpu->sr0&0400 && mm&1);
 }
 #else
 #define setMM(cpu, mm)
@@ -304,13 +304,13 @@ static int
 checkbus(KD11A *cpu, int wr, int pse)
 {
 	int err = 0;
+	int ba = BA&~1;
 	if((wr|pse) && !(cpu->mode&2) && cpu->flags&FLAG_CKOVF){
-// TODO: probably should mask away BA00
-		if(BA == 0177776 ||	// PSW
+		if(ba == 0177776 ||	// PSW
 #ifdef KJ11
-		   BA == 0177774 ||	// SLR
+		   ba == 0177774 ||	// SLR
 #endif
-		   BA == 0177570){	// SR
+		   ba == 0177570){	// SR
 			cpu->flags |= FLAG_OVFLW;	// proc address
 			err = ovflwerr(cpu);
 // TODO: what's going on here with KT11?
@@ -436,7 +436,7 @@ static int
 datix(KD11A *cpu, int pse)
 {
 trace("dati%s %o %06o ", pse ? "p" : "", cpu->flags, cpu->ba);
-	if(remapBA(cpu, 0))
+	if(remapBA(cpu, pse))
 		return 1;
 trace(" phys(%o) <- ", PBA);
 	if(checkbus(cpu, 0, pse))

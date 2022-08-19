@@ -39,7 +39,8 @@ struct KD11B
 	int xmit_tbmt;
 	byte xmit_b;
 
-	int ttyfd;
+	Tty tty;
+	Clock clock;
 };
 void run(KD11B *cpu);
 void reset(KD11B *cpu);

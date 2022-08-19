@@ -19,7 +19,7 @@ struct KL11
 
 	int intr_flags;
 
-	int ttyfd;
+	Tty tty;
 };
 int dati_kl11(Bus *bus, void *dev);
 int dato_kl11(Bus *bus, void *dev);

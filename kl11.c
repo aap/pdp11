@@ -49,7 +49,9 @@ dato_kl11(Bus *bus, void *dev)
 			// TODO: RDR ENAB
 			kl->rdr_enab = bus->data & 1;
 			kl->rdr_int_enab = bus->data>>6 & 1;
-			if(kl->rdr_done && kl->rdr_int_enab)
+			if(!kl->rdr_int_enab)
+				kl->intr_flags &= ~2;
+			else if(kl->rdr_done)
 				kl->intr_flags |= 2;
 			break;
 		case 2:
@@ -60,7 +62,9 @@ dato_kl11(Bus *bus, void *dev)
 			// TODO: MAINT
 			kl->maint = bus->data>>2 & 1;
 			kl->pun_int_enab = bus->data>>6 & 1;
-			if(kl->pun_ready && kl->pun_int_enab)
+			if(!kl->pun_int_enab)
+				kl->intr_flags &= ~1;
+			else if(kl->pun_ready)
 				kl->intr_flags |= 1;
 			break;
 		case 6:
@@ -94,6 +98,7 @@ int NNN;
 int
 svc_kl11(Bus *bus, void *dev)
 {
+	char c;
 	KL11 *kl = dev;
 
 	NNN++;
@@ -102,7 +107,7 @@ svc_kl11(Bus *bus, void *dev)
 	/* transmit */
 	if(!kl->pun_halt){
 		uint8 c = kl->pun_buf & 0177;
-		write(kl->ttyfd, &c, 1);
+		write(kl->tty.fd, &c, 1);
 #ifdef AUTODIAG
 	extern int diagpassed;
 	if(c == '\a')
@@ -115,10 +120,10 @@ svc_kl11(Bus *bus, void *dev)
 	}
 
 	/* receive */
-	if(hasinput(kl->ttyfd)){
+	if(ttyinput(&kl->tty, &c)){
 		kl->rdr_busy = 1;
 		kl->rdr_enab = 0;
-		read(kl->ttyfd, &kl->rdr_buf, 1);
+		kl->rdr_buf = c;
 		kl->rdr_busy = 0;
 		kl->rdr_done = 1;
 		if(kl->rdr_int_enab)

@@ -7,6 +7,7 @@ struct KW11
 	int lc_int_enab;
 	int lc_clock;
 	int lc_int;
+	Clock clock;
 };
 int dati_kw11(Bus *bus, void *dev);
 int dato_kw11(Bus *bus, void *dev);

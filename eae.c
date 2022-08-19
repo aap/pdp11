@@ -22,7 +22,6 @@ enum {
 	KE_ASH  = 0777316,
 };
 
-#define B31 (1<<31)
 #define B30 (1<<30)
 
 static void

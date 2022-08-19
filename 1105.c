@@ -1,6 +1,5 @@
 #include "11.h"
 #include "kd11b.h"
-#include "args.h"
 
 // in words
 #define MEMSIZE (12*1024)
@@ -62,7 +61,7 @@ sgn(word w)
 word
 sxt(byte b)
 {
-	return (word)(int8_t)b;
+	return (word)(int8)b;
 }
 
 void
@@ -200,7 +199,7 @@ rundiag(KD11B *cpu, char *ptfile)
 
 
 int
-main(int argc, char *argv[])
+xmain(int argc, char *argv[])
 {
 	memset(&cpu, 0, sizeof(KD11B));
 	memset(&bus, 0, sizeof(Bus));
@@ -218,9 +217,7 @@ main(int argc, char *argv[])
 
 	reset(&cpu);
 
-	/* open a tty if it exists */
-	cpu.ttyfd = open("/tmp/tty", O_RDWR);
-	printf("tty connected to %d\n", cpu.ttyfd);
+	ttyopen(&cpu.tty);
 
 #ifdef AUTODIAG
 	if(rundiag(&cpu, "maindec/ZKAAA0.BIN")) return 0;
