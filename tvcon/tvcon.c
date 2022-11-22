@@ -35,7 +35,10 @@ SDL_Texture *screentex;
 const uint8 *keystate;
 uint32 fb[WIDTH*HEIGHT];
 uint32 *finalfb;
-uint32 fg = 0x4AFF0000; // Phosphor P39, peak at 525nm.
+//uint32 fg = 0x4AFF0000; // Phosphor P39, peak at 525nm.
+//uint32 fg = 0x00d56d00; // taken from cool-retro-term
+//uint32 fg = 0x0ccc6800; // taken from cool-retro-term
+uint32 fg = 0x55FF7100; // taken from the matrix
 uint32 bg = 0x00000000;
 TCPsocket sock;
 int backspace = 017; /* Knight key code for BS. */
@@ -43,7 +46,7 @@ uint32 userevent;
 int updatebuf = 1;
 int updatescreen = 1;
 
-uint8 largebuf[64*1024];
+uint8 readbuf[64*1024];
 
 
 enum {
@@ -437,6 +440,7 @@ void
 textinput(char *text)
 {
 	int key;
+	uint8 buf[5];
 
 	if (text[0] >= 128)
 		return;
@@ -448,9 +452,9 @@ textinput(char *text)
 	// Add in modifiers except shift, which comes from the table.
 	key |= curmod & ~MOD_SHIFT;
 
-	msgheader(largebuf, MSG_KEYDN, 3);
-	w2b(largebuf+3, key);
-	writen(sock, largebuf, 5);
+	msgheader(buf, MSG_KEYDN, 3);
+	w2b(buf+3, key);
+	writen(sock, buf, 5);
 }
 
 /* Return true if this key will come as a TextInput event.*/
@@ -491,9 +495,12 @@ void
 keydown(SDL_Keysym keysym, Uint8 repeat)
 {
 	int key;
+	uint8 buf[5];
 
 	if(ctrlslock && keysym.scancode == SDL_SCANCODE_CAPSLOCK)
 		keysym.scancode = SDL_SCANCODE_LCTRL;
+	if(keysym.scancode == SDL_SCANCODE_F7)
+		keysym.scancode = SDL_SCANCODE_CAPSLOCK;
 
 	if(keysym.scancode == SDL_SCANCODE_F8){
 		fullscreen = !fullscreen;
@@ -543,9 +550,9 @@ keydown(SDL_Keysym keysym, Uint8 repeat)
 
 	key |= curmod;
 
-	msgheader(largebuf, MSG_KEYDN, 3);
-	w2b(largebuf+3, key);
-	writen(sock, largebuf, 5);
+	msgheader(buf, MSG_KEYDN, 3);
+	w2b(buf+3, key);
+	writen(sock, buf, 5);
 //	printf("down: %o\n", key);
 }
 
@@ -554,6 +561,8 @@ keyup(SDL_Keysym keysym)
 {
 	if(ctrlslock && keysym.scancode == SDL_SCANCODE_CAPSLOCK)
 		keysym.scancode = SDL_SCANCODE_LCTRL;
+	if(keysym.scancode == SDL_SCANCODE_F7)
+		keysym.scancode = SDL_SCANCODE_CAPSLOCK;
 
 	if(modmap)
 		/* Map RALT to TOP and ignore windows key */
@@ -629,7 +638,7 @@ getupdate(uint16 addr, uint16 wd)
 void
 getfb(void)
 {
-	uint8 *b;
+	uint8 *b, buf[11];
 	int x, y, w, h;
 
 	x = 0;
@@ -637,14 +646,14 @@ getfb(void)
 	w = WIDTH;
 	h = HEIGHT;
 
-	b = largebuf;
+	b = buf;
 	msgheader(b, MSG_GETFB, 9);
 	b += 3;
 	w2b(b, x);
 	w2b(b+2, y);
 	w2b(b+4, w);
 	w2b(b+6, h);
-	writen(sock, largebuf, 11);
+	writen(sock, buf, 11);
 }
 
 void
@@ -672,7 +681,7 @@ readthread(void *arg)
 
 	while(readn(sock, &len, 2) != -1){
 		len = b2w((uint8*)&len);
-		b = largebuf;
+		b = readbuf;
 		readn(sock, b, len);
 		type = *b++;
 		switch(type){
