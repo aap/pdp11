@@ -149,6 +149,10 @@ struct Uword
 	int fen;
 	int bef;
 	int adr;
+
+	// info only
+	char *name;
+	int page;
 };
 
 enum
@@ -159,7 +163,7 @@ enum
 };
 
 Uword urom[256] = {
-#include "ucode.inc"
+#include "ucode_45.inc"
 };
 
 // TODO: is this even necessary?
