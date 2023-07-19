@@ -205,7 +205,7 @@ oc_output(unsigned char bits)
 		if(fd == -1)
 			fd = oc_child();
 
-		write(fd, &bits, 1); /* error? lol yolo */
+		(void)write(fd, &bits, 1); /* error? lol yolo */
 	}
 
 	old = bits;
