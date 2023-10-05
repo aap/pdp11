@@ -950,8 +950,10 @@ recycle:
 	df = dst & 7;
 	dm = dst>>3 & 7;
 	KT if(df == SP && USER) df = USP;
-	if(by)	mask = M8, sign = B7;
-	else	mask = M16, sign = B15;
+	if(by || (cpu->ir&0077700) == 0300)
+		mask = M8, sign = B7;
+	else
+		mask = M16, sign = B15;
 
 	cpu->newpsw = cpu->newmask = 0;
 	/* Binary */

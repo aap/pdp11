@@ -323,8 +323,10 @@ step(KA11 *cpu)
 	dst = cpu->ir & 077;
 	df = dst & 7;
 	dm = dst>>3 & 7;
-	if(by)	mask = M8, sign = B7;
-	else	mask = M16, sign = B15;
+	if(by || (cpu->ir&0077700) == 0300)
+		mask = M8, sign = B7;
+	else
+		mask = M16, sign = B15;
 
 	inhov = 0;
 	/* Binary */
