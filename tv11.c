@@ -1,4 +1,5 @@
 #include "11.h"
+#include "util.h"
 
 /* define this for a TV-11 with 11/05. Make sure to link correctly! */
 //#define KD11Bp
@@ -163,7 +164,7 @@ svc_ten11(Bus *bus, void *dev)
 		buf[0] = 0;
 		buf[1] = 1;
 		buf[2] = 3;
-		write(ten11->fd, buf, 3);
+		writen(ten11->fd, buf, 3);
 		break;
 	case 2:		/* read */
 		bus->addr = a;
@@ -175,7 +176,7 @@ svc_ten11(Bus *bus, void *dev)
 		buf[2] = 3;
 		buf[3] = bus->data>>8;
 		buf[4] = bus->data;
-		write(ten11->fd, buf, 5);
+		writen(ten11->fd, buf, 5);
 		break;
 	default:
 		fprintf(stderr, "unknown ten11 message type %d\n", buf[0]);
@@ -188,7 +189,7 @@ fprintf(stderr, "TEN11 bus error %06o\n", bus->addr);
 	buf[0] = 0;
 	buf[1] = 1;
 	buf[2] = 4;
-	write(ten11->fd, buf, 3);
+	writen(ten11->fd, buf, 3);
 	ten11->cycle = 0;
 	return 0;
 }

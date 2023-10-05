@@ -1,5 +1,6 @@
 #include "11.h"
 #include "tv.h"
+#include "util.h"
 #include <sys/poll.h>
 #include <pthread.h>
 
@@ -204,7 +205,7 @@ oc_output(unsigned char bits)
 		if(fd == -1)
 			fd = oc_child();
 
-		write(fd, &bits, 1); /* error? lol yolo */
+		(void)write(fd, &bits, 1); /* error? lol yolo */
 	}
 
 	old = bits;
@@ -284,7 +285,7 @@ datob_tv(Bus *bus, void *dev)
 	FBuffer *curbuf;
 
 	creg = tv->ten11->cycle ? &tv->creg10 : &tv->creg11;
-	curbuf = (*creg & BUFMASK < NUMFBUFFERS) ? &tv->buffers[*creg & BUFMASK] : nil;
+	curbuf = ((*creg & BUFMASK) < NUMFBUFFERS) ? &tv->buffers[*creg & BUFMASK] : nil;
 	d = bus->data;
 	m = bus->addr&1 ? ~0377 : 0377;
 	if(bus->addr >= TVLO && bus->addr < 0160000){
@@ -502,7 +503,7 @@ sendfb(TV *tv, int osw)
 	w2b(b+6, HEIGHT);
 	b += 8;
 	packfb(tv, b, con->dpy, 0, 0, WIDTH/16, HEIGHT);
-	write(con->fd, largebuf, 3+8+WIDTH*HEIGHT/8);
+	writen(con->fd, largebuf, 3+8+WIDTH*HEIGHT/8);
 }
 
 void
@@ -546,7 +547,7 @@ sendupdate(TV *tv, FBuffer *buffer, uint16 addr)
 		bw1 = n1 < 0 ? 0 : tv->buffers[n1].mask;
 		bw2 = n2 < 0 ? 0 : tv->buffers[n2].mask;
 		w2b(buf+5, w1^bw1 | w2^bw2);
-		write(tv->cons[tv->omap[osw]].fd, buf, 7);
+		writen(tv->cons[tv->omap[osw]].fd, buf, 7);
 	}
 }
 
@@ -558,7 +559,7 @@ setdpykbd(int fd, int dpy, int kbd)
 	uint8 buf[2];
 	buf[0] = dpy;
 	buf[1] = kbd;
-	write(fd, buf, 2);
+	writen(fd, buf, 2);
 }
 
 /* Get first free connection or -1 */
@@ -592,7 +593,7 @@ closetv(TV *tv)
 	for(i = 0; i < NUMCONNECTIONS; i++)
 		if(tv->cons[i].fd >= 0){
 			msgheader(buf, MSG_CLOSE, 1);
-			write(tv->cons[i].fd, buf, 3);
+			writen(tv->cons[i].fd, buf, 3);
 			/* wait for close */
 			read(tv->cons[i].fd, buf, 1);
 			/* this will cause the handletv thread
@@ -729,7 +730,7 @@ err:
 		w2b(b+6, h);
 		b += 8;
 		packfb(tv, b, con->dpy, x, y, w, h);
-		write(con->fd, largebuf, 3+8+w*h*2);
+		writen(con->fd, largebuf, 3+8+w*h*2);
 		break;
 
 	default:
