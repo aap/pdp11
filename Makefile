@@ -1,11 +1,26 @@
 CFLAGS=-Wall -Wno-parentheses -fno-diagnostics-color -fno-diagnostics-show-caret -O3
 #CFLAGS+=-DAUTODIAG #-pg
 
-all: tv11 pdp1145 pdp1105 pdp1120 pdp1140
+all: tv11 xgp11 pdp1145 pdp1105 pdp1120 pdp1140
 
 tv11: tv11.o tv.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o
 	$(CC) $(CFLAGS) -o $@ $^ -lpthread
 tv11.o: 11.h ka11.h kw11.h kl11.h tv.h
+
+xgp11: xgp11.o xgp.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o print.o \
+	lodepng.o
+	$(CC) $(CFLAGS) -o $@ $^ -lpthread
+xgp11.o: 11.h ka11.h kw11.h kl11.h xgp.h print.h
+
+lodepng.o:: lodepng.h lodepng.c
+
+print.o:: print.c print.h lodepng.h
+
+lodepng.c: lodepng/lodepng.cpp
+	cp $< $@
+
+lodepng.h: lodepng/lodepng.h
+	cp $< $@
 
 pdp1145: u_kb11a.o
 	$(CC) $(CFLAGS) -o $@ $^
