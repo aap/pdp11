@@ -51,3 +51,20 @@ ttyinput(Tty *tty, char *c)
 	}
 	return 0;
 }
+
+int
+timestamp(char *buffer, size_t n)
+{
+	struct tm *tm;
+	time_t t;
+
+	t = time(NULL);
+	if (t == (time_t)-1)
+		return -1;
+	tm = localtime(&t);
+	if (tm == NULL)
+		return -1;
+	if(strftime(buffer, n, "%Y%m%d%H%M%S", tm) == 0)
+		return -1;
+	return 0;
+}

@@ -24,6 +24,7 @@ int dial(char *host, int port);
 void serve(int port, void (*handlecon)(int, void*), void *arg);
 void nodelay(int fd);
 void sleep_ms (uint32 ms);
+int timestamp(char *buffer, size_t n);
 
 #define xmain main
 
