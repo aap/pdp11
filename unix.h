@@ -30,7 +30,9 @@ void sleep_ms (uint32 ms);
 typedef struct Clock Clock;
 struct Clock
 {
-	// TODO
+	struct timespec oldtime;
+	struct timespec newtime;
+	long period;
 };
 
 typedef struct Tty Tty;
