@@ -9,8 +9,11 @@
 #define PAPER_MAX  (PAGE_HEIGHT * 20)
 #define PAGE_MAX  (PAGE_HEIGHT * 3)
 
+extern void meatball(int width, int height, unsigned char *paper, unsigned char *image, unsigned char *page);
+
 static unsigned char paper[PAGE_WIDTH * PAPER_MAX];
 static unsigned char page[4 * PAGE_WIDTH * PAGE_MAX];
+static unsigned char image[4 * 4 * PAGE_WIDTH * 4 * PAGE_MAX];
 static int lines, position;
 
 void print_start()
@@ -47,24 +50,10 @@ void print_dot(int bw)
 
 static void make_page(void)
 {
-	int paper_index, page_index;
-	int i, j, n;
-
-	if(lines > PAGE_MAX)
+	int n = lines;
+	if(n > PAGE_MAX)
 		n = PAGE_MAX;
-	else
-		n = lines;
-
-	for(j = 0; j < n; j++) {
-		paper_index = PAGE_WIDTH * j;
-		page_index = 4 * PAGE_WIDTH * j;
-		for(i = 0; i < PAGE_WIDTH; i++) {
-			page[page_index++] = paper[paper_index];
-			page[page_index++] = paper[paper_index];
-			page[page_index++] = paper[paper_index++];
-			page[page_index++] = 0xFF;
-		}
-	}
+	meatball(PAGE_WIDTH, n, paper, image, page);
 }
 
 int print_finish(int offset, char *file, size_t n)
@@ -80,12 +69,13 @@ int print_finish(int offset, char *file, size_t n)
 
 	timestamp(time, sizeof time);
 	snprintf(file, n, "xgp-%s.png", time);
-	make_page();
-	error = (int)lodepng_encode32_file(file, page, PAGE_WIDTH, lines);
-	if(error == 0)
+	if(fork()) {
 		error = lines;
-	else
-		error = -1;
+	} else {
+		make_page();
+		error = lodepng_encode32_file(file, page, PAGE_WIDTH, lines);
+		exit(error == 0 ? 0 : 1);
+	}
 
 	memmove(paper, paper + PAGE_WIDTH*lines, PAGE_WIDTH*offset);
 	lines = offset;

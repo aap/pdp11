@@ -132,7 +132,7 @@ metaballize(Image *in, Image *out, int mag)
 			for(int j = (int)fx - sz; j < (int)fx + sz; j++)
 				if(i >= 0 && i < in->h &&
 				   j >= 0 && j < in->w &&
-				   in->pixels[i*in->stride + j*4] == 0) {
+				   in->pixels[i*in->stride + j] == 0) {
 					float m = meta(fx,fy, 1.00f, j, i);
 					m = powf(m, 2.2f);
 					f += m;
@@ -179,8 +179,32 @@ downsample(Image *out, Image *in, int mag)
 		}
 }
 
+void meatball(int width, int height, unsigned char *paper, unsigned char *image, unsigned char *page)
+{
+	Image in, meatball, out;
+	int mag = 4;
+
+	in.w = width;
+	in.h = height;
+	in.stride = in.w;
+	in.pixels = paper;
+
+	meatball.w = mag*width;
+	meatball.h = mag*height;
+	meatball.stride = 4*meatball.w;
+	meatball.pixels = image;
+
+	out.w = width;
+	out.h = height;
+	out.stride = 4*in.w;
+	out.pixels = page;
+
+	metaballize(&in, &meatball, mag);
+	downsample(&out, &meatball, mag);
+}
+
 int
-main(int argc, char *argv[])
+omain(int argc, char *argv[])
 {
 	FILE *f;
 	u8 *raw;

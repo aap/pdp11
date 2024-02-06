@@ -8,8 +8,8 @@ tv11: tv11.o tv.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o
 tv11.o: 11.h ka11.h kw11.h kl11.h tv.h
 
 xgp11: xgp11.o xgp.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o print.o \
-	lodepng.o
-	$(CC) $(CFLAGS) -o $@ $^ -lpthread
+	lodepng.o meatball.o
+	$(CC) $(CFLAGS) -o $@ $^ -lpthread -lm
 xgp11.o: 11.h ka11.h kw11.h kl11.h xgp.h print.h
 
 lodepng.o:: lodepng.h lodepng.c

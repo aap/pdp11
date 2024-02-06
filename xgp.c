@@ -2,6 +2,7 @@
 #include "xgp.h"
 #include "util.h"
 #include "print.h"
+#include <sys/wait.h>
 #include <pthread.h>
 
 /*
@@ -338,6 +339,12 @@ xgp_go(XGP *xgp, Bus *bus)
 void
 xgp_sync(XGP *xgp)
 {
+	int wstatus;
+	if(waitpid(-1, &wstatus, WNOHANG) > 0) {
+		if(WIFEXITED(wstatus) && WEXITSTATUS(wstatus) != 0)
+			fprintf(stderr, "Printing error\n");
+	}
+
 	if(xgp->xcr & FMOT)
 		xgp->speed += (xgp->speed < SPEED_READY);
 	else if (--xgp->stopping == 0) {
