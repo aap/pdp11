@@ -75,7 +75,7 @@ int dato_ke11(Bus *bus, void *dev);
 int datob_ke11(Bus *bus, void *dev);
 void reset_ke11(void *dev);
 
-void initclock(Clock *clk);
+void initclock(Clock *clk, long period);
 int handleclock(Clock *clk);
 int ttyopen(Tty *tty);
 int ttyinput(Tty *tty, char *c);

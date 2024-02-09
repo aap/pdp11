@@ -1,6 +1,8 @@
 #include "11.h"
 #include "kw11.h"
 
+#define CLOCKFREQ (1000000000/60)
+
 int
 dati_kw11(Bus *bus, void *dev)
 {
@@ -70,5 +72,5 @@ reset_kw11(void *dev)
 	kw->lc_clock = 0;
 	kw->lc_int = 0;
 
-	initclock(&kw->clock);
+	initclock(&kw->clock, CLOCKFREQ);
 }

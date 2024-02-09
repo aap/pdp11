@@ -701,7 +701,7 @@ run(KD11B *cpu)
 	int n;
 	char c;
 	cpu->state = STATE_RUNNING;
-	initclock(&cpu->clock);
+	initclock(&cpu->clock, CLOCKFREQ);
 	n = 0;
 	while(cpu->state != STATE_HALTED){
 		if(handleclock(&cpu->clock)){
