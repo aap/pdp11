@@ -222,7 +222,7 @@ Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_k
 TV tv;
 Busdev tvbusdev = { nil, &tv, dati_tv, dato_tv, datob_tv, svc_tv, bg_tv, reset_tv };
 Ten11 ten11;
-Busdev ten11busdev = { nil, &ten11, dati_null, dato_null, datob_null, svc_ten11, nil, reset_ten11 };
+Busdev ten11busdev = { nil, &ten11, dati_ten11, dato_ten11, datob_ten11, svc_ten11, nil, reset_ten11 };
 
 void
 setunibus(uint8 n)
@@ -248,11 +248,13 @@ main(int argc, char *argv[])
 {
 	int port, lport;
 	uint32 sleep;
+	char *mfile = NULL;
 
 	memset(&cpu, 0, sizeof(cpu));
 	memset(&bus, 0, sizeof(Bus));
 	cpu.bus = &bus;
-	busadddev(&bus, &membusdev);
+	if(0)
+		busadddev(&bus, &membusdev);
 #ifndef KD11Bp
 	busadddev(&bus, &kwbusdev);
 	busadddev(&bus, &klbusdev);
@@ -272,6 +274,9 @@ main(int argc, char *argv[])
 	case 'l':
 		lport = atoi(EARGF(usage()));
 		break;
+	case 'f':
+		mfile = EARGF(usage());
+		break;
 	case 's':
 		sleep = atoi(EARGF(usage()));
 		break;
@@ -281,13 +286,16 @@ main(int argc, char *argv[])
 		break;
 	}ARGEND;
 
-	if(argc < 1)
+	if((mfile == NULL) == (argc < 1))
 		usage();
 
 	ten11.host = argv[0];
 	ten11.port = port;
 	ten11.cycle = 0;
 	ten11.fd = -1;
+	ten11.file = mfile;
+	ten11.start = 0;
+	ten11.length = MEMSIZE;
 	loadmem("mem.txt");
 
 //	if(loadpt("maindec/MAINDEC-11-D0NA-PB.ptap"))
@@ -302,7 +310,7 @@ main(int argc, char *argv[])
 
 	inittv(&tv);
 	tv.ten11 = &ten11;
-	initten11(&ten11, MEMSIZE);
+	initten11(&ten11);
 
 	reset(&cpu);
 
@@ -319,7 +327,9 @@ main(int argc, char *argv[])
 	/* wait until we get some data from the 10 */
 	cpu.r[7] = 0;
 	cpu.throttle = sleep;
-	memory[0] = 0777;
+	bus.addr = 0;
+	bus.data = 0777;
+	dato_bus(&bus);
 	run(&cpu);
 
 	closetv(&tv);
