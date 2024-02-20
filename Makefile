@@ -3,14 +3,16 @@ CFLAGS=-Wall -Wno-parentheses -fno-diagnostics-color -fno-diagnostics-show-caret
 
 all: tv11 xgp11 pdp1145 pdp1105 pdp1120 pdp1140
 
-tv11: tv11.o tv.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o
+tv11: tv11.o tv.o ten11.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o
 	$(CC) $(CFLAGS) -o $@ $^ -lpthread
 tv11.o: 11.h ka11.h kw11.h kl11.h tv.h
 
-xgp11: xgp11.o xgp.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o print.o \
+xgp11: xgp11.o xgp.o ten11.o ka11.o eae.o kw11.o kl11.o mem.o unix.o util.o print.o \
 	lodepng.o meatball.o
 	$(CC) $(CFLAGS) -o $@ $^ -lpthread -lm
 xgp11.o: 11.h ka11.h kw11.h kl11.h xgp.h print.h
+
+ten11.o: ten11.c 11.h ten11.h util.h
 
 lodepng.o:: lodepng.h lodepng.c
 

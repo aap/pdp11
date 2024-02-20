@@ -1,12 +1,3 @@
-/* The 10-11 interface */
-typedef struct Ten11 Ten11;
-struct Ten11
-{
-	int cycle;
-	int fd;
-};
-
-
 /* The whole XGP system */
 typedef struct XGP XGP;
 struct XGP

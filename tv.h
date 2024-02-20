@@ -1,11 +1,4 @@
-/* The 10-11 interface */
-typedef struct Ten11 Ten11;
-struct Ten11
-{
-	int cycle;
-	int fd;
-};
-
+#include "ten11.h"
 
 /* Some of these numbers are also hardcoded! */
 enum {
