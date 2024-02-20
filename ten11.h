@@ -8,4 +8,6 @@ struct Ten11
 	int fd;
 };
 
+extern void initten11(Ten11 *ten11, int memsize);
+extern void reset_ten11(void *dev);
 extern int svc_ten11(Bus *bus, void *dev);

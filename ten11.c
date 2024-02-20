@@ -4,6 +4,16 @@
 
 extern void (*debug) (char *, ...);
 
+void
+initten11(Ten11 *ten11, int memsize)
+{
+}
+
+void
+reset_ten11(void *dev)
+{
+}
+
 static char *re = "";
 
 static void

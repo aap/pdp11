@@ -222,7 +222,7 @@ Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_k
 XGP xgp;
 Busdev xgpbusdev = { nil, &xgp, dati_xgp, dato_xgp, datob_xgp, svc_xgp, bg_xgp, reset_xgp };
 Ten11 ten11;
-Busdev ten11busdev = { nil, &ten11, dati_null, dato_null, datob_null, svc_ten11, nil, reset_null };
+Busdev ten11busdev = { nil, &ten11, dati_null, dato_null, datob_null, svc_ten11, nil, reset_ten11 };
 
 void
 setunibus(uint8 n)
@@ -296,6 +296,7 @@ main(int argc, char *argv[])
 	//eaetest(&ke11);
 
 	initxgp(&xgp);
+	initten11(&ten11, MEMSIZE);
 
 	reset(&cpu);
 

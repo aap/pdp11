@@ -222,7 +222,7 @@ Busdev kwbusdev = { nil, &kw11, dati_kw11, dato_kw11, datob_kw11, svc_kw11, bg_k
 TV tv;
 Busdev tvbusdev = { nil, &tv, dati_tv, dato_tv, datob_tv, svc_tv, bg_tv, reset_tv };
 Ten11 ten11;
-Busdev ten11busdev = { nil, &ten11, dati_null, dato_null, datob_null, svc_ten11, nil, reset_null };
+Busdev ten11busdev = { nil, &ten11, dati_null, dato_null, datob_null, svc_ten11, nil, reset_ten11 };
 
 void
 setunibus(uint8 n)
@@ -302,6 +302,7 @@ main(int argc, char *argv[])
 
 	inittv(&tv);
 	tv.ten11 = &ten11;
+	initten11(&ten11, MEMSIZE);
 
 	reset(&cpu);
 
