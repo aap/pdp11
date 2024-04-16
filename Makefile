@@ -50,4 +50,7 @@ mem.o: 11.h
 util.o: 11.h
 
 clean:
-	rm *.o
+	rm -f tv11 xgp11 pdp1145 pdp1105 pdp1120 pdp1140
+	rm -f *.o
+	rm -f lodepng.c
+	rm -f lodepng.h
