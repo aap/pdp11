@@ -329,10 +329,12 @@ char *argv0;
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-p port] [-l listenport] server\n", argv0);
+	fprintf(stderr, "usage: %s [-p port] [-l listenport] [-s time(ms)] [-d] server\n", argv0);
 	fprintf(stderr, "\tserver: host running pdp-10\n");
 	fprintf(stderr, "\t-p: pdp-10 port; default 1110\n");
 	fprintf(stderr, "\t-l: tv11 listen port; default 11100\n");
+	fprintf(stderr, "\t-s: sleep (ms); default=0\n");
+	fprintf(stderr, "\t-d: write debug log\n");
 	exit(0);
 }
 
