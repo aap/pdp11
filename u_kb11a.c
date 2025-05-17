@@ -163,7 +163,7 @@ enum
 };
 
 Uword urom[256] = {
-#include "ucode_45.inc"
+#include "ucode/ucode_45.inc"
 };
 
 // TODO: is this even necessary?

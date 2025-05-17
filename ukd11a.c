@@ -67,7 +67,7 @@ timeaddns(struct timespec *t, int ns)
 
 
 Uword urom[] = {
-#include "ucode_40.inc"
+#include "ucode/ucode_40.inc"
 };
 
 enum
