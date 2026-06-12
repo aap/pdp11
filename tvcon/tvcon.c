@@ -715,9 +715,9 @@ readthread(void *arg)
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-c bg,fg] [-2] [-B] [-C] [-p port] server\n", argv0);
+	fprintf(stderr, "usage: %s [-c bg,fg] [-#] [-B] [-C] [-p port] server\n", argv0);
 	fprintf(stderr, "\t-c: set background and foreground color (in hex)\n");
-	fprintf(stderr, "\t-2: scale 2x\n");
+	fprintf(stderr, "\t-#: scale #x (where # is a digit 2-9)\n");
 	fprintf(stderr, "\t-B: map backspace to rubout\n");
 	fprintf(stderr, "\t-C: map shift lock to control\n");
 	fprintf(stderr, "\t-S: map keys by according to symbols\n");
@@ -768,8 +768,16 @@ main(int argc, char *argv[])
 	case 'M':
 		modmap++;
 		break;
+	case '1':
 	case '2':
-		scale++;
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		scale = ARGC() - '0';
 		break;
 	}ARGEND;
 
